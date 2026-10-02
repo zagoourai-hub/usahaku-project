@@ -36,6 +36,8 @@ Profile: `saas-web-no-ai` · Pasangan: `AGENTS.md`
 ## Gotcha
 
 - Backend ESM: import relatif pakai ekstensi `.js`.
+- Auth butuh Redis: logout memasukkan token ke daftar blokir (`TokenDenylist` di `auth.guard.ts`). Kalau Redis mati, request yang butuh login gagal (sengaja ditolak, bukan dibiarkan lolos). Deploy di belakang Coolify/Traefik: set `TRUST_PROXY_HOPS=1` agar rate limit melihat IP asli.
+- Update DTO: pakai `PartialType(X, NOT_NULL)` / `IsOptionalNotNull` (`dto.decorators.ts`) agar `null` ke kolom wajib jadi 400, bukan 500.
 - Prisma client di `src/generated/prisma`, koneksi via `@prisma/adapter-pg`.
 - Infra dev: `docker compose -f docker/docker-compose.yml up -d` (dari root) → postgres, redis, s3 (SeaweedFS); tambah `--profile app --build` + `JWT_SECRET` untuk jalankan image backend. Env backend: `backend/.env.example`.
 - Backend: `typescript` = alias TS6 (Nest CLI butuh compiler API); typecheck TS7: `pnpm typecheck`. e2e (`pnpm test:e2e`) butuh Postgres jalan dan server dev backend **mati** (worker-nya berbagi queue Redis `ocr` dan merebut job test).

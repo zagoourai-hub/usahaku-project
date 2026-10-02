@@ -13,7 +13,7 @@ import {
   Min,
   ValidateIf,
 } from 'class-validator';
-import { IsMoney, Trim } from '../dto.decorators.js';
+import { IsMoney, NOT_NULL, Trim } from '../dto.decorators.js';
 import { CategoryType } from '../generated/prisma/client.js';
 
 const DATE_ONLY = /^\d{4}-\d{2}-\d{2}$/;
@@ -51,7 +51,10 @@ export class CreateTransactionDto {
   portions?: number | null;
 }
 
-export class UpdateTransactionDto extends PartialType(CreateTransactionDto) {}
+export class UpdateTransactionDto extends PartialType(
+  CreateTransactionDto,
+  NOT_NULL,
+) {}
 
 export class QueryTransactionDto {
   @IsOptional()

@@ -3,11 +3,12 @@ import {
   Controller,
   HttpCode,
   Post,
+  Req,
   Res,
   UseGuards,
 } from '@nestjs/common';
 import { Throttle, ThrottlerGuard } from '@nestjs/throttler';
-import type { CookieOptions, Response } from 'express';
+import type { CookieOptions, Request, Response } from 'express';
 import { AUTH_COOKIE, Public } from './auth.guard.js';
 import { LoginDto, RegisterDto } from './auth.dto.js';
 import { AuthService, TOKEN_TTL_SECONDS } from './auth.service.js';
@@ -50,7 +51,8 @@ export class AuthController {
   @Public()
   @Post('logout')
   @HttpCode(200)
-  logout(@Res({ passthrough: true }) res: Response) {
+  async logout(@Req() req: Request, @Res({ passthrough: true }) res: Response) {
+    await this.auth.logout(req.cookies?.[AUTH_COOKIE]);
     res.clearCookie(AUTH_COOKIE, cookieOptions());
     return { ok: true };
   }

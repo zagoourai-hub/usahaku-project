@@ -95,16 +95,21 @@ export class TransactionService {
     return this.prisma.$transaction(async (tx) => {
       const current = await tx.transaction.findFirst({
         where: { id, businessId },
-        select: { type: true },
+        select: { type: true, portions: true },
       });
       if (!current) throw new NotFoundException('Transaksi tidak ditemukan');
       const category =
         dto.categoryId && (await ownedCategory(tx, businessId, dto.categoryId));
       const type = category ? category.type : current.type;
       // Omitted recipeId keeps the sale, unless the entry became an expense.
+      // Omitted portions keeps the current count.
       const sale =
         dto.recipeId !== undefined
-          ? await saleOf(tx, businessId, type, dto)
+          ? await saleOf(tx, businessId, type, {
+              recipeId: dto.recipeId,
+              portions:
+                dto.portions === undefined ? current.portions : dto.portions,
+            })
           : type === 'EXPENSE'
             ? { recipeId: null, portions: null }
             : {};
@@ -155,11 +160,15 @@ async function saleOf(
   if (type !== 'INCOME') {
     throw new BadRequestException('Menu terjual hanya untuk pemasukan');
   }
+  // PATCH linking a menu to a plain entry: a sale without portions counts as 0 sold.
+  if (dto.portions == null) {
+    throw new BadRequestException('Jumlah porsi wajib diisi');
+  }
   const found = await tx.recipe.count({
     where: { id: dto.recipeId, businessId },
   });
   if (!found) throw new BadRequestException('Resep tidak ditemukan');
-  return { recipeId: dto.recipeId, portions: dto.portions! };
+  return { recipeId: dto.recipeId, portions: dto.portions };
 }
 
 @Controller('transactions')

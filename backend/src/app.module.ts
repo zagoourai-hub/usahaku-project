@@ -2,6 +2,7 @@ import { INestApplication, Module, ValidationPipe } from '@nestjs/common';
 import { HttpAdapterHost } from '@nestjs/core';
 import { BullModule } from '@nestjs/bullmq';
 import cookieParser from 'cookie-parser';
+import type { NextFunction, Request, Response } from 'express';
 import { AiModule } from './ai/ai.service.js';
 import { AuthModule } from './auth/auth.module.js';
 import { BusinessModule } from './business/business.module.js';
@@ -52,6 +53,23 @@ export class AppModule {}
 
 /** Shared by main.ts and e2e tests so both run the same pipeline. */
 export function configureApp(app: INestApplication) {
+  // JSON API + receipt images: no framing, no MIME sniffing, no referrer leak.
+  // ponytail: hand-rolled instead of helmet, whose default CORP would block
+  // the frontend's cross-origin <img> of receipt photos.
+  const securityHeaders: Record<string, string> = {
+    'X-Content-Type-Options': 'nosniff',
+    'X-Frame-Options': 'DENY',
+    'Content-Security-Policy': "frame-ancestors 'none'",
+    'Referrer-Policy': 'no-referrer',
+    ...(process.env.NODE_ENV === 'production' && {
+      'Strict-Transport-Security': 'max-age=15552000; includeSubDomains',
+    }),
+  };
+  app.use((_req: Request, res: Response, next: NextFunction) => {
+    res.set(securityHeaders);
+    res.removeHeader('X-Powered-By');
+    next();
+  });
   app.use(cookieParser());
   app.useGlobalPipes(
     new ValidationPipe({

@@ -7,7 +7,7 @@ import { JwtService } from '@nestjs/jwt';
 import * as argon2 from 'argon2';
 import { Prisma } from '../generated/prisma/client.js';
 import { PrismaService } from '../prisma/prisma.service.js';
-import type { AuthPayload } from './auth.guard.js';
+import { type AuthPayload, TokenDenylist } from './auth.guard.js';
 import type { LoginDto, RegisterDto } from './auth.dto.js';
 
 export const TOKEN_TTL_SECONDS = 7 * 24 * 60 * 60;
@@ -30,6 +30,7 @@ export class AuthService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly jwt: JwtService,
+    private readonly denylist: TokenDenylist,
   ) {}
 
   async register(dto: RegisterDto) {
@@ -81,6 +82,18 @@ export class AuthService {
       throw new UnauthorizedException('Email atau password salah');
     }
     return this.issue(user.id, user.business.id);
+  }
+
+  /** Revokes the cookie token so a copy of it stops working before expiry. */
+  async logout(token: unknown) {
+    if (typeof token !== 'string') return;
+    let payload: AuthPayload;
+    try {
+      payload = await this.jwt.verifyAsync<AuthPayload>(token);
+    } catch {
+      return; // invalid or expired: nothing to revoke
+    }
+    if (payload.exp) await this.denylist.revoke(token, payload.exp);
   }
 
   private issue(userId: string, businessId: string) {

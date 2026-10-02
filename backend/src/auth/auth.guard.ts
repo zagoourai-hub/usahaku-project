@@ -1,20 +1,53 @@
+import { createHash } from 'node:crypto';
 import {
   CanActivate,
   createParamDecorator,
   ExecutionContext,
   Injectable,
+  OnModuleDestroy,
   SetMetadata,
   UnauthorizedException,
 } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
 import { JwtService } from '@nestjs/jwt';
 import type { Request } from 'express';
+import { Redis } from 'ioredis';
 
 export const AUTH_COOKIE = 'access_token';
 
 export interface AuthPayload {
   sub: string; // userId
   bid: string; // businessId
+  exp?: number; // set by jwt on sign
+}
+
+/**
+ * Logged-out tokens, kept in Redis until they would expire anyway.
+ * Fails closed: if Redis is unreachable, authenticated requests error out.
+ */
+@Injectable()
+export class TokenDenylist implements OnModuleDestroy {
+  private readonly redis = new Redis(
+    process.env.REDIS_URL || 'redis://localhost:6379',
+    { maxRetriesPerRequest: 1, lazyConnect: true },
+  );
+
+  private key(token: string) {
+    return `revoked:${createHash('sha256').update(token).digest('hex')}`;
+  }
+
+  async revoke(token: string, exp: number) {
+    const ttl = exp - Math.floor(Date.now() / 1000);
+    if (ttl > 0) await this.redis.set(this.key(token), '1', 'EX', ttl);
+  }
+
+  async isRevoked(token: string) {
+    return (await this.redis.exists(this.key(token))) === 1;
+  }
+
+  onModuleDestroy() {
+    this.redis.disconnect();
+  }
 }
 
 type AuthedRequest = Request & { auth?: AuthPayload };
@@ -45,6 +78,7 @@ export class JwtAuthGuard implements CanActivate {
   constructor(
     private readonly jwt: JwtService,
     private readonly reflector: Reflector,
+    private readonly denylist: TokenDenylist,
   ) {}
 
   async canActivate(ctx: ExecutionContext): Promise<boolean> {
@@ -62,6 +96,7 @@ export class JwtAuthGuard implements CanActivate {
     } catch {
       throw new UnauthorizedException();
     }
+    if (await this.denylist.isRevoked(token)) throw new UnauthorizedException();
     return true;
   }
 }

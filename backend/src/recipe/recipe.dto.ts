@@ -15,7 +15,7 @@ import {
   Min,
   ValidateNested,
 } from 'class-validator';
-import { IsMoney, IsQuantity, Trim } from '../dto.decorators.js';
+import { IsMoney, IsQuantity, NOT_NULL, Trim } from '../dto.decorators.js';
 
 export class RecipeIngredientDto {
   @IsUUID()
@@ -85,4 +85,4 @@ export class CreateRecipeDto {
 }
 
 /** Omitted arrays are left unchanged; provided arrays replace the old list. */
-export class UpdateRecipeDto extends PartialType(CreateRecipeDto) {}
+export class UpdateRecipeDto extends PartialType(CreateRecipeDto, NOT_NULL) {}

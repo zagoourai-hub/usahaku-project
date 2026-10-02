@@ -1,5 +1,6 @@
 import {
   ArgumentsHost,
+  BadRequestException,
   Catch,
   ConflictException,
   ExceptionFilter,
@@ -30,6 +31,9 @@ function toHttp(
     case 'P2003':
     case 'P2014':
       return new ConflictException('Data masih dipakai data lain');
+    // Derived Decimal column (price per unit, HPP) overflowed from extreme inputs.
+    case 'P2020':
+      return new BadRequestException('Angka terlalu besar');
     case 'P2025':
       return new NotFoundException('Data tidak ditemukan');
     default:

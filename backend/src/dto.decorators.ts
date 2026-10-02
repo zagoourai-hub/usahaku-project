@@ -1,6 +1,13 @@
 import { applyDecorators } from '@nestjs/common';
 import { Transform } from 'class-transformer';
-import { IsNumber, Max, Min } from 'class-validator';
+import { IsNumber, Max, Min, ValidateIf } from 'class-validator';
+
+/** Like @IsOptional but only skips `undefined`: null still fails validation (non-nullable columns). */
+export const IsOptionalNotNull = () =>
+  ValidateIf((_: unknown, value: unknown) => value !== undefined);
+
+/** For PartialType on update DTOs: null is validated, not skipped. */
+export const NOT_NULL = { skipNullProperties: false } as const;
 
 /** Trims string input before validation. */
 export const Trim = () =>

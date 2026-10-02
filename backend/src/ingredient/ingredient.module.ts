@@ -17,7 +17,7 @@ import {
 import { PartialType } from '@nestjs/mapped-types';
 import { IsEnum, IsString, Length } from 'class-validator';
 import { CurrentBusiness } from '../auth/auth.guard.js';
-import { IsMoney, IsQuantity, Trim } from '../dto.decorators.js';
+import { IsMoney, IsQuantity, NOT_NULL, Trim } from '../dto.decorators.js';
 import {
   type EntrySource,
   type Prisma,
@@ -49,7 +49,10 @@ export class CreateIngredientDto {
   purchasePrice: number;
 }
 
-export class UpdateIngredientDto extends PartialType(CreateIngredientDto) {}
+export class UpdateIngredientDto extends PartialType(
+  CreateIngredientDto,
+  NOT_NULL,
+) {}
 
 @Injectable()
 export class IngredientService {

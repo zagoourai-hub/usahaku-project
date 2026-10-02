@@ -10,16 +10,16 @@ import { IsEnum, IsOptional, IsString, Length } from 'class-validator';
 import { CurrentBusiness } from '../auth/auth.guard.js';
 import { BusinessType } from '../generated/prisma/client.js';
 import { PrismaService } from '../prisma/prisma.service.js';
-import { IsMoney, Trim } from '../dto.decorators.js';
+import { IsMoney, IsOptionalNotNull, Trim } from '../dto.decorators.js';
 
 export class UpdateBusinessDto {
-  @IsOptional()
+  @IsOptionalNotNull()
   @Trim()
   @IsString()
   @Length(1, 100)
   name?: string;
 
-  @IsOptional()
+  @IsOptionalNotNull()
   @IsEnum(BusinessType)
   type?: BusinessType;
 

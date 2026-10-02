@@ -7,7 +7,9 @@ import {
   ParseUUIDPipe,
   Post,
   ServiceUnavailableException,
+  UseGuards,
 } from '@nestjs/common';
+import { Throttle, ThrottlerGuard } from '@nestjs/throttler';
 import { AiService } from '../ai/ai.service.js';
 import { CurrentBusiness } from '../auth/auth.guard.js';
 import { Prisma } from '../generated/prisma/client.js';
@@ -103,7 +105,11 @@ export class PricingService {
 export class PricingController {
   constructor(private readonly pricing: PricingService) {}
 
+  // Quota is only consumed after the slow AI call, so parallel requests could each
+  // trigger a model call; cap the burst per client.
   @Post(':id/price-suggestion')
+  @UseGuards(ThrottlerGuard)
+  @Throttle({ default: { limit: 5, ttl: 60_000 } })
   suggest(
     @CurrentBusiness() businessId: string,
     @Param('id', ParseUUIDPipe) id: string,

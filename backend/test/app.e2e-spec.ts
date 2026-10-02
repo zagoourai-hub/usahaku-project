@@ -83,6 +83,35 @@ describe('UsahaKu API (e2e)', () => {
         .expect(401);
     });
 
+    it('logout revokes the token: a copied cookie stops working', async () => {
+      const res = await request(app.getHttpServer())
+        .post('/auth/register')
+        .send({
+          name: 'L',
+          email: `l-${randomUUID()}@test.local`,
+          password: 'rahasia123',
+        })
+        .expect(201);
+      const cookie = String(res.headers['set-cookie']).split(';')[0];
+      const me = await request(app.getHttpServer())
+        .get('/business/me')
+        .set('Cookie', cookie)
+        .expect(200);
+      expect(me.headers).toMatchObject({
+        'x-content-type-options': 'nosniff',
+        'x-frame-options': 'DENY',
+      });
+      expect(me.headers['x-powered-by']).toBeUndefined();
+      await request(app.getHttpServer())
+        .post('/auth/logout')
+        .set('Cookie', cookie)
+        .expect(200);
+      await request(app.getHttpServer())
+        .get('/business/me')
+        .set('Cookie', cookie)
+        .expect(401);
+    });
+
     it('rejects duplicate email and wrong password', async () => {
       const email = `d-${randomUUID()}@test.local`;
       const body = { name: 'D', email, password: 'rahasia123' };
@@ -220,6 +249,30 @@ describe('UsahaKu API (e2e)', () => {
       ]);
       const milk = await a.get(`/ingredients/${milkId}`).expect(200);
       expect(milk.body.priceLogs).toHaveLength(2);
+    });
+
+    it('rejects null on required fields and numeric overflow with 400, not 500', async () => {
+      await a
+        .patch(`/recipes/${recipeId}`)
+        .send({ yieldPortions: null })
+        .expect(400);
+      await a.patch(`/recipes/${recipeId}`).send({ name: null }).expect(400);
+      await a
+        .patch(`/ingredients/${milkId}`)
+        .send({ purchasePrice: null })
+        .expect(400);
+      await a.patch('/business/me').send({ name: null }).expect(400);
+      // 1e12 per 0.001 gram overflows Decimal(14,4) pricePerUsageUnit
+      await a
+        .post('/ingredients')
+        .send({
+          name: 'Mahal',
+          purchaseUnit: 'pack',
+          purchaseQty: 0.001,
+          usageUnit: 'gram',
+          purchasePrice: 999_999_999_999,
+        })
+        .expect(400);
     });
 
     it('refuses to delete an ingredient used by a recipe (409)', async () => {
@@ -531,6 +584,21 @@ describe('UsahaKu API (e2e)', () => {
         .patch(`/transactions/${t.body.id}`)
         .send({ categoryId: incomeCat, recipeId, portions: 4 })
         .expect(200);
+      // recipeId alone keeps the current portions...
+      const kept = await s
+        .patch(`/transactions/${t.body.id}`)
+        .send({ recipeId })
+        .expect(200);
+      expect(kept.body.portions).toBe(4);
+      // ...but can't turn a plain entry into a sale without portions
+      const plain = await s
+        .post('/transactions')
+        .send({ categoryId: incomeCat, amount: 1000, transactionDate: today })
+        .expect(201);
+      await s
+        .patch(`/transactions/${plain.body.id}`)
+        .send({ recipeId })
+        .expect(400);
     });
 
     it('sums portions per menu with a trend vs the previous period, scoped', async () => {
