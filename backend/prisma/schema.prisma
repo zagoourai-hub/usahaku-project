@@ -1,0 +1,292 @@
+generator client {
+  provider            = "prisma-client"
+  output              = "../src/generated/prisma"
+  // explicit: inference reads tsconfig, which isn't present in the Docker deps layer
+  moduleFormat        = "esm"
+  importFileExtension = "js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum BusinessType {
+  WARUNG
+  KEDAI_MINUMAN
+  KATERING
+  LAINNYA
+}
+
+enum Tier {
+  FREE
+  PRO
+}
+
+enum SubscriptionStatus {
+  ACTIVE
+  EXPIRED
+  CANCELED
+}
+
+enum PurchaseUnit {
+  kg
+  liter
+  pack
+  pcs
+}
+
+enum UsageUnit {
+  gram
+  ml
+  pcs
+}
+
+enum EntrySource {
+  MANUAL
+  OCR
+}
+
+enum HppTrigger {
+  RECIPE_EDIT
+  PRICE_CHANGE
+}
+
+enum ReceiptStatus {
+  PENDING
+  PROCESSING
+  DONE
+  FAILED
+  CONFIRMED
+}
+
+enum CategoryType {
+  INCOME
+  EXPENSE
+}
+
+model User {
+  id           String        @id @default(uuid()) @db.Uuid
+  email        String        @unique
+  passwordHash String
+  name         String
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+  business     Business?
+  subscription Subscription?
+}
+
+model Business {
+  id            String         @id @default(uuid()) @db.Uuid
+  userId        String         @unique @db.Uuid
+  user          User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  name          String
+  type          BusinessType   @default(LAINNYA)
+  city          String?
+  // Daily net-profit goal shown on the dashboard; null = not set
+  dailyProfitTarget Decimal?   @db.Decimal(14, 2)
+  branchLabel   String?
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+  ingredients   Ingredient[]
+  recipes       Recipe[]
+  categories    Category[]
+  transactions  Transaction[]
+  usageCounters UsageCounter[]
+  receiptScans  ReceiptScan[]
+}
+
+model Subscription {
+  id        String             @id @default(uuid()) @db.Uuid
+  userId    String             @unique @db.Uuid
+  user      User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  tier      Tier               @default(FREE)
+  status    SubscriptionStatus @default(ACTIVE)
+  startedAt DateTime           @default(now())
+  expiresAt DateTime?
+}
+
+model UsageCounter {
+  id                String   @id @default(uuid()) @db.Uuid
+  businessId        String   @db.Uuid
+  business          Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  period            String // YYYY-MM
+  transactionCount  Int      @default(0)
+  ocrCount          Int      @default(0)
+  aiSuggestionCount Int      @default(0)
+
+  @@unique([businessId, period])
+}
+
+model Ingredient {
+  id                String               @id @default(uuid()) @db.Uuid
+  businessId        String               @db.Uuid
+  business          Business             @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  name              String
+  purchaseUnit      PurchaseUnit
+  purchaseQty       Decimal              @db.Decimal(12, 3)
+  usageUnit         UsageUnit
+  purchasePrice     Decimal              @db.Decimal(14, 2)
+  // 4 dp: per-gram prices are often fractional (e.g. 12.345/gram)
+  pricePerUsageUnit Decimal              @db.Decimal(14, 4)
+  createdAt         DateTime             @default(now())
+  updatedAt         DateTime             @updatedAt
+  priceLogs         IngredientPriceLog[]
+  recipeItems       RecipeIngredient[]
+  receiptItems      ReceiptItem[]
+
+  @@index([businessId, name])
+}
+
+model IngredientPriceLog {
+  id            String      @id @default(uuid()) @db.Uuid
+  ingredientId  String      @db.Uuid
+  ingredient    Ingredient  @relation(fields: [ingredientId], references: [id], onDelete: Cascade)
+  purchasePrice Decimal     @db.Decimal(14, 2)
+  source        EntrySource @default(MANUAL)
+  createdAt     DateTime    @default(now())
+
+  @@index([ingredientId, createdAt])
+}
+
+model Recipe {
+  id               String             @id @default(uuid()) @db.Uuid
+  businessId       String             @db.Uuid
+  business         Business           @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  name             String
+  category         String? // free-text menu group, e.g. "Minuman"
+  yieldPortions    Int
+  targetMarginPct  Decimal            @db.Decimal(5, 2)
+  currentHpp       Decimal            @default(0) @db.Decimal(14, 2)
+  sellingPrice     Decimal?           @db.Decimal(14, 2)
+  isActive         Boolean            @default(true)
+  createdAt        DateTime           @default(now())
+  updatedAt        DateTime           @updatedAt
+  ingredients      RecipeIngredient[]
+  overheads        RecipeOverhead[]
+  snapshots        HppSnapshot[]
+  priceSuggestions PriceSuggestion[]
+  sales            Transaction[]
+
+  @@index([businessId, name])
+}
+
+model RecipeIngredient {
+  id           String     @id @default(uuid()) @db.Uuid
+  recipeId     String     @db.Uuid
+  recipe       Recipe     @relation(fields: [recipeId], references: [id], onDelete: Cascade)
+  ingredientId String     @db.Uuid
+  // Restrict: deleting an ingredient still used by a recipe -> 409
+  ingredient   Ingredient @relation(fields: [ingredientId], references: [id], onDelete: Restrict)
+  quantity     Decimal    @db.Decimal(12, 3) // in ingredient.usageUnit, per batch
+
+  @@unique([recipeId, ingredientId])
+  @@index([ingredientId])
+}
+
+model RecipeOverhead {
+  id             String  @id @default(uuid()) @db.Uuid
+  recipeId       String  @db.Uuid
+  recipe         Recipe  @relation(fields: [recipeId], references: [id], onDelete: Cascade)
+  name           String
+  costPerPortion Decimal @db.Decimal(14, 2)
+}
+
+model HppSnapshot {
+  id            String     @id @default(uuid()) @db.Uuid
+  recipeId      String     @db.Uuid
+  recipe        Recipe     @relation(fields: [recipeId], references: [id], onDelete: Cascade)
+  hppPerPortion Decimal    @db.Decimal(14, 2)
+  trigger       HppTrigger
+  createdAt     DateTime   @default(now())
+
+  @@index([recipeId, createdAt])
+}
+
+model Category {
+  id           String        @id @default(uuid()) @db.Uuid
+  businessId   String        @db.Uuid
+  business     Business      @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  name         String
+  type         CategoryType
+  isDefault    Boolean       @default(false)
+  transactions Transaction[]
+
+  @@unique([businessId, type, name])
+}
+
+model Transaction {
+  id              String       @id @default(uuid()) @db.Uuid
+  businessId      String       @db.Uuid
+  business        Business     @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  categoryId      String       @db.Uuid
+  // Restrict: deleting a category that has transactions -> 409
+  category        Category     @relation(fields: [categoryId], references: [id], onDelete: Restrict)
+  type            CategoryType // copied from category, denormalized for reports
+  amount          Decimal      @db.Decimal(14, 2)
+  description     String?
+  transactionDate DateTime     @db.Date
+  source          EntrySource  @default(MANUAL)
+  receiptScanId   String?      @unique @db.Uuid
+  receiptScan     ReceiptScan? @relation(fields: [receiptScanId], references: [id], onDelete: SetNull)
+  // Manual sales-per-menu (INCOME only): portions of `recipe` sold in this entry
+  recipeId        String?      @db.Uuid
+  recipe          Recipe?      @relation(fields: [recipeId], references: [id], onDelete: SetNull)
+  portions        Int?
+  createdAt       DateTime     @default(now())
+  updatedAt       DateTime     @updatedAt
+
+  @@index([businessId, transactionDate])
+  @@index([businessId, categoryId])
+  @@index([recipeId, transactionDate])
+}
+
+model PriceSuggestion {
+  id               String   @id @default(uuid()) @db.Uuid
+  recipeId         String   @db.Uuid
+  recipe           Recipe   @relation(fields: [recipeId], references: [id], onDelete: Cascade)
+  hppAtRequest     Decimal  @db.Decimal(14, 2)
+  minPrice         Decimal  @db.Decimal(14, 2)
+  maxPrice         Decimal  @db.Decimal(14, 2)
+  recommendedPrice Decimal  @db.Decimal(14, 2)
+  reasoning        String   @db.Text
+  model            String
+  createdAt        DateTime @default(now())
+
+  @@index([recipeId, createdAt])
+}
+
+model ReceiptScan {
+  id            String        @id @default(uuid()) @db.Uuid
+  businessId    String        @db.Uuid
+  business      Business      @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  imageKey      String // object storage key
+  mimeType      String
+  status        ReceiptStatus @default(PENDING)
+  rawResult     Json?
+  detectedTotal Decimal?      @db.Decimal(14, 2)
+  detectedDate  DateTime?     @db.Date
+  merchantName  String?
+  errorMessage  String? // user-safe message only
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+  items         ReceiptItem[]
+  transaction   Transaction?
+
+  @@index([businessId, createdAt])
+  @@index([status])
+}
+
+model ReceiptItem {
+  id                  String      @id @default(uuid()) @db.Uuid
+  receiptScanId       String      @db.Uuid
+  receiptScan         ReceiptScan @relation(fields: [receiptScanId], references: [id], onDelete: Cascade)
+  matchedIngredientId String?     @db.Uuid
+  matchedIngredient   Ingredient? @relation(fields: [matchedIngredientId], references: [id], onDelete: SetNull)
+  name                String
+  qty                 Decimal     @db.Decimal(12, 3)
+  unit                String
+  price               Decimal     @db.Decimal(14, 2) // line total
+  position            Int         @default(0) // order on the receipt
+
+  @@index([receiptScanId])
+}

@@ -1,0 +1,181 @@
+/* UsahaKu theme — tokens from design/globals.css (shadcn/ui + Tailwind v4 format). */
+@import "tailwindcss";
+
+@custom-variant dark (&:is(.dark *));
+
+:root {
+  --background: #fafaf7;
+  --foreground: #1c1917;
+  --card: #ffffff;
+  --card-foreground: #1c1917;
+  --card-inner: #f8f8f5;
+  --popover: #ffffff;
+  --popover-foreground: #1c1917;
+  --primary: #0f766e;
+  --primary-hover: #0d635c;
+  --primary-foreground: #f0fdfa;
+  --secondary: #fef3c7;
+  --secondary-foreground: #78350f;
+  --muted: #f5f5f0;
+  --muted-foreground: #4f4b45; /* ~8:1 on background: readable for older eyes */
+  --accent: #f59e0b;
+  --accent-foreground: #1c1917;
+  --destructive: #dc2626;
+  --destructive-foreground: #ffffff;
+  --border: #e7e5df;
+  --input: #e7e5df;
+  --ring: #14b8a6;
+  --track: #e5e5e0;
+  --income: #16a34a;
+  --income-soft: #dcfce7;
+  --expense: #dc2626;
+  --expense-soft: #fee2e2;
+  --warning: #b45309;
+  --warning-soft: #fef3c7;
+  /* Chart pair validated with dataviz validate_palette.js (light + dark). */
+  --chart-income: #0d9488;
+  --chart-expense: #dc2626;
+  --radius: 0.625rem;
+  --shadow-md: 0 4px 16px rgb(28 25 23 / 0.08);
+}
+
+.dark {
+  --background: #0c0a09;
+  --foreground: #f5f5f4;
+  --card: #1c1917;
+  --card-foreground: #f5f5f4;
+  --card-inner: #24201d;
+  --popover: #1c1917;
+  --popover-foreground: #f5f5f4;
+  --primary: #2dd4bf;
+  --primary-hover: #14b8a6;
+  --primary-foreground: #042f2e;
+  --secondary: #422006;
+  --secondary-foreground: #fbbf24;
+  --muted: #181615;
+  --muted-foreground: #d6d3d1;
+  --accent: #fbbf24;
+  --accent-foreground: #1c1917;
+  --destructive: #f87171;
+  --destructive-foreground: #1c1917;
+  --border: #2e2a27;
+  --input: #2e2a27;
+  --ring: #2dd4bf;
+  --track: #292524;
+  --income: #4ade80;
+  --income-soft: #14532d;
+  --expense: #f87171;
+  --expense-soft: #450a0a;
+  --warning: #fbbf24;
+  --warning-soft: #422006;
+  --chart-expense: #ef4444;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-card-inner: var(--card-inner);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-hover: var(--primary-hover);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-track: var(--track);
+  --color-income: var(--income);
+  --color-income-soft: var(--income-soft);
+  --color-expense: var(--expense);
+  --color-expense-soft: var(--expense-soft);
+  --color-warning: var(--warning);
+  --color-warning-soft: var(--warning-soft);
+  --color-chart-income: var(--chart-income);
+  --color-chart-expense: var(--chart-expense);
+  --font-sans: var(--font-jakarta), ui-sans-serif, system-ui, sans-serif;
+  /* No monospace: every "mono" label/number renders in the body font (easier to read). */
+  --font-mono: var(--font-jakarta), ui-sans-serif, system-ui, sans-serif;
+  /* Readability floor for adult-to-senior users: nothing below 14px, body text 16-17px. */
+  --text-xs: 0.875rem;
+  --text-xs--line-height: 1.35;
+  --text-sm: 1rem;
+  --text-sm--line-height: 1.5;
+  --text-base: 1.0625rem;
+  --text-base--line-height: 1.6;
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: var(--radius);
+  --radius-lg: calc(var(--radius) + 4px);
+  --radius-xl: calc(var(--radius) + 10px);
+  --shadow-md: var(--shadow-md);
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  :focus-visible {
+    @apply outline-2 outline-offset-2 outline-ring;
+  }
+  html {
+    @apply bg-background;
+    scroll-behavior: smooth;
+    scroll-padding-top: 4rem;
+  }
+  body {
+    @apply bg-background text-foreground font-sans text-base antialiased;
+  }
+  .tabular {
+    font-variant-numeric: tabular-nums;
+  }
+}
+
+.hero-bg {
+  background: radial-gradient(circle at 20% 20%, rgb(204 251 241 / 0.4) 0%, rgb(254 243 199 / 0.28) 45%, var(--background) 80%);
+}
+.dark .hero-bg {
+  background: radial-gradient(circle at 18% 25%, rgb(20 56 52 / 0.4) 0%, var(--background) 70%);
+}
+
+/* Meteors falling top → bottom with slight diagonal drift. */
+@keyframes meteor {
+  0% { transform: rotate(var(--angle)) translateY(0); opacity: 0; }
+  15% { opacity: 1; }
+  80% { opacity: 0.9; }
+  100% { transform: rotate(var(--angle)) translateY(850px); opacity: 0; }
+}
+.meteor {
+  position: absolute;
+  width: 2.5px;
+  height: 2.5px;
+  border-radius: 9999px;
+  background: var(--primary);
+  box-shadow: 0 0 0 1px rgb(15 118 110 / 0.25), 0 0 8px rgb(15 118 110 / 0.6);
+  animation: meteor linear infinite;
+}
+.dark .meteor {
+  background: #5eead4;
+  box-shadow: 0 0 0 1px rgb(45 212 191 / 0.4), 0 0 10px rgb(45 212 191 / 0.9);
+}
+.meteor::after {
+  content: "";
+  position: absolute;
+  bottom: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 1.5px;
+  height: 70px;
+  background: linear-gradient(to top, var(--primary), transparent);
+}
+@media (prefers-reduced-motion: reduce) {
+  .meteor { display: none; }
+}

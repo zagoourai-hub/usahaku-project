@@ -1,0 +1,647 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="id"><head><meta charset="utf-8"/><meta content="width=device-width, initial-scale=1.0" name="viewport"/><meta content="web_standard" name="shell-type"/><title>HPPKu - Kalkulator &amp; Manajemen HPP Kuliner</title><link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@500;600;700;800&amp;family=Atkinson+Hyperlegible+Next:wght@400;500;700&amp;family=Geist+Mono:wght@500;600;700&amp;display=swap" rel="stylesheet"/><link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/><style>
+@layer base {
+  html, body {
+    margin: 0;
+    padding: 0;
+    transition: background-color 0.3s ease, color 0.3s ease;
+  }
+  body {
+    overscroll-behavior: none;
+  }
+  main > :first-child { margin-top: 0 !important; }
+  main > :last-child { margin-bottom: 0 !important; }
+}
+::-webkit-scrollbar { display: none; }
+* {
+  transition-property: background-color, border-color, color, fill, stroke;
+  transition-duration: 250ms;
+  transition-timing-function: ease;
+}
+.hero-glow-dark {
+  background: radial-gradient(circle at 18% 25%, rgba(20, 56, 52, 0.4) 0%, rgba(12, 10, 9, 1) 70%);
+}
+.hero-glow-light {
+  background: radial-gradient(circle at 20% 20%, rgba(204, 251, 241, 0.5) 0%, rgba(254, 243, 199, 0.3) 45%, #FAFAF7 80%);
+}
+
+/* Meteors Animation & Styling - Top to Bottom Falling */
+@keyframes meteor {
+  0% {
+    transform: rotate(var(--angle, 15deg)) translateY(0);
+    opacity: 0;
+  }
+  15% {
+    opacity: 1;
+  }
+  80% {
+    opacity: 0.9;
+  }
+  100% {
+    transform: rotate(var(--angle, 15deg)) translateY(850px);
+    opacity: 0;
+  }
+}
+.animate-meteor {
+  animation: meteor linear infinite;
+}
+.meteor-item {
+  position: absolute;
+  width: 2.5px;
+  height: 2.5px;
+  border-radius: 9999px;
+  background-color: #0f766e;
+  box-shadow: 0 0 0 1px rgba(15, 118, 110, 0.25), 0 0 8px rgba(15, 118, 110, 0.6);
+  pointer-events: none;
+}
+.dark .meteor-item {
+  background-color: #5eead4;
+  box-shadow: 0 0 0 1px rgba(45, 212, 191, 0.4), 0 0 10px rgba(45, 212, 191, 0.9);
+}
+.meteor-tail {
+  pointer-events: none;
+  position: absolute;
+  bottom: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 1.5px;
+  height: 70px;
+  background: linear-gradient(to top, #0f766e, transparent);
+}
+.dark .meteor-tail {
+  background: linear-gradient(to top, #2dd4bf, transparent);
+}
+</style><script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script><script id="tailwind-config">
+tailwind.config = {
+  darkMode: "class",
+  theme: {
+    extend: {
+      colors: {
+        "dark-background": "#0C0A09",
+        "dark-foreground": "#F5F5F4",
+        "dark-muted-foreground": "#A8A29E",
+        "dark-card": "#1C1917",
+        "dark-card-inner": "#24201D",
+        "dark-border": "#2E2A27",
+        "dark-primary": "#2DD4BF",
+        "dark-primary-hover": "#14B8A6",
+        "dark-primary-text": "#042F2E",
+        "dark-green": "#4ADE80",
+        "dark-green-bg": "#14532D",
+        "dark-amber": "#FBBF24",
+        "dark-track": "#292524"
+      },
+      borderRadius: {
+        "DEFAULT": "0.25rem",
+        "lg": "0.5rem",
+        "xl": "0.75rem",
+        "full": "9999px"
+      },
+      spacing: {
+        "space-lg": "1rem",
+        "gutter": "1rem",
+        "space-xs": "0.25rem",
+        "space-xl": "1.5rem",
+        "space-md": "0.75rem",
+        "space-2xl": "2rem",
+        "margin": "1rem",
+        "gutter-desktop": "1.5rem",
+        "space-sm": "0.5rem",
+        "margin-desktop": "2rem"
+      },
+      fontFamily: {
+        "body-sm": ["Atkinson Hyperlegible Next"],
+        "body-md": ["Atkinson Hyperlegible Next"],
+        "money-hero": ["Geist Mono"],
+        "headline-lg-mobile": ["Plus Jakarta Sans"],
+        "money-sm": ["Geist Mono"],
+        "body-lg": ["Atkinson Hyperlegible Next"],
+        "label-md": ["Geist Mono"],
+        "headline-lg": ["Plus Jakarta Sans"],
+        "headline-sm": ["Plus Jakarta Sans"],
+        "money-hero-mobile": ["Geist Mono"],
+        "money-md": ["Geist Mono"],
+        "display": ["Plus Jakarta Sans"],
+        "headline-md": ["Plus Jakarta Sans"]
+      },
+      fontSize: {
+        "body-sm": ["13px", {"lineHeight": "18px", "fontWeight": "400"}],
+        "body-md": ["15px", {"lineHeight": "22px", "fontWeight": "400"}],
+        "money-hero": ["32px", {"lineHeight": "36px", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+        "headline-lg-mobile": ["24px", {"lineHeight": "30px", "letterSpacing": "-0.015em", "fontWeight": "700"}],
+        "money-sm": ["13px", {"lineHeight": "18px", "fontWeight": "600"}],
+        "body-lg": ["16px", {"lineHeight": "24px", "fontWeight": "500"}],
+        "label-md": ["12px", {"lineHeight": "16px", "letterSpacing": "0.02em", "fontWeight": "600"}],
+        "headline-lg": ["28px", {"lineHeight": "34px", "letterSpacing": "-0.015em", "fontWeight": "700"}],
+        "headline-sm": ["17px", {"lineHeight": "24px", "fontWeight": "600"}],
+        "money-hero-mobile": ["26px", {"lineHeight": "32px", "letterSpacing": "-0.015em", "fontWeight": "700"}],
+        "money-md": ["16px", {"lineHeight": "22px", "fontWeight": "600"}],
+        "display": ["36px", {"lineHeight": "40px", "letterSpacing": "-0.02em", "fontWeight": "800"}],
+        "headline-md": ["20px", {"lineHeight": "26px", "fontWeight": "700"}]
+      }
+    }
+  }
+};
+</script></head><body class="bg-[#FAFAF7] dark:bg-[#0C0A09] font-body-md text-[#1C1917] dark:text-[#F5F5F4] antialiased transition-colors"><header class="fixed top-0 left-0 right-0 z-50 bg-[#FAFAF7]/95 dark:bg-[#0C0A09]/95 backdrop-blur-sm border-b border-[#E7E5DF] dark:border-[#2E2A27]"><div class="h-16 max-w-7xl mx-auto px-margin md:px-margin-desktop flex items-center justify-between"><div class="flex items-center gap-space-sm"><div class="w-9 h-9 rounded-lg bg-[#0F766E]/10 dark:bg-[#2DD4BF]/15 border border-[#0F766E]/20 dark:border-[#2DD4BF]/30 flex items-center justify-center"><span class="material-symbols-outlined text-[#0F766E] dark:text-[#2DD4BF] text-[20px]">calculate</span></div><a class="font-headline-md text-headline-md font-bold tracking-tight text-[#1C1917] dark:text-[#F5F5F4]" data-path="landing-page" href="#">HPP<span class="text-[#D97706] dark:text-[#FBBF24]">Ku</span></a></div><nav class="hidden md:flex items-center gap-space-xl"><a class="font-headline-sm text-body-md text-[#1C1917] dark:text-[#F5F5F4] hover:text-[#0F766E] dark:hover:text-[#2DD4BF] transition-colors font-medium" data-path="beranda" href="#">Beranda</a><a class="font-headline-sm text-body-md text-[#6B6B63] dark:text-[#A8A29E] hover:text-[#1C1917] dark:hover:text-[#F5F5F4] transition-colors" data-path="fitur" href="#fitur">Fitur</a><a class="font-headline-sm text-body-md text-[#6B6B63] dark:text-[#A8A29E] hover:text-[#1C1917] dark:hover:text-[#F5F5F4] transition-colors" data-path="simulasi-hpp" href="#simulasi">Simulasi HPP</a><a class="font-headline-sm text-body-md text-[#6B6B63] dark:text-[#A8A29E] hover:text-[#1C1917] dark:hover:text-[#F5F5F4] transition-colors" data-path="harga" href="#harga">Harga</a><a class="font-headline-sm text-body-md text-[#6B6B63] dark:text-[#A8A29E] hover:text-[#1C1917] dark:hover:text-[#F5F5F4] transition-colors" data-path="testimoni" href="#testimoni">Testimoni</a></nav><div class="flex items-center gap-space-md"><button class="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-[#EEEEEE] hover:bg-[#E5E5E0] dark:bg-[#1C1917] dark:hover:bg-[#24201D] border border-[#E7E5DF] dark:border-[#2E2A27] text-label-md font-label-md text-[#1C1917] dark:text-[#A8A29E] transition-all cursor-pointer shadow-sm active:scale-95" id="theme-toggle-btn" title="Ganti Mode Tampilan" type="button"><span class="material-symbols-outlined text-[16px] text-[#0F766E] dark:text-[#2DD4BF]" id="theme-toggle-icon">dark_mode</span><span class="" id="theme-toggle-label">Dark Mode</span></button><a class="font-headline-sm text-body-md text-[#6B6B63] dark:text-[#A8A29E] hover:text-[#1C1917] dark:hover:text-[#F5F5F4] px-space-sm py-space-xs transition-colors" data-path="masuk" href="#">Masuk</a><a class="inline-flex items-center justify-center h-11 px-space-xl rounded-lg bg-[#0F766E] dark:bg-[#2DD4BF] text-[#F0FDFA] dark:text-[#042F2E] font-headline-sm text-body-sm font-bold hover:bg-[#0d635c] dark:hover:bg-[#14B8A6] transition-colors active:translate-y-[1px] shadow-sm" data-path="daftar" href="#">Mulai Gratis</a><div class="w-8 h-8 rounded-full bg-[#EEEEEE] dark:bg-[#1C1917] border border-[#E7E5DF] dark:border-[#2E2A27] flex items-center justify-center"><span class="material-symbols-outlined text-[#6B6B63] dark:text-[#A8A29E] text-[18px]">person</span></div></div></div></header><main class="w-full pt-16 bg-[#FAFAF7] dark:bg-[#0C0A09] transition-colors"><div class="flex flex-col w-full">
+<section class="w-full py-space-2xl md:py-16 relative overflow-hidden transition-colors" id="hero-section" style="background: radial-gradient(circle at 18% 25%, rgba(20, 56, 52, 0.4) 0%, rgb(12, 10, 9) 70%);">
+<div class="pointer-events-none absolute inset-0 overflow-hidden z-0" id="hero-meteors"></div>
+<div aria-hidden="true" class="absolute inset-0 pointer-events-none overflow-hidden z-1"><div class="absolute inset-0 opacity-[0.045] dark:opacity-[0.045]" style="background-image: radial-gradient(circle, currentColor 1px, transparent 1px); background-size: 24px 24px;"></div><div class="absolute -top-[60px] -left-[100px] w-[680px] height-[560px] h-[560px] rounded-full opacity-60 dark:opacity-80 -rotate-6 transition-opacity" style="background: radial-gradient(circle, rgba(15, 118, 110, 0.15) 0%, rgba(245, 158, 11, 0.08) 60%, transparent 100%);"></div><div class="absolute top-[120px] left-[240px] w-[340px] h-[340px] rounded-full border border-[#0F766E]/10 dark:border-[#2DD4BF]/10"></div><div class="absolute top-[80px] left-[200px] w-[420px] h-[420px] rounded-full border border-dashed border-[#D97706]/15 dark:border-[#FBBF24]/10"></div></div><div class="max-w-7xl mx-auto px-margin md:px-margin-desktop relative z-10">
+<div class="flex flex-col lg:flex-row items-center lg:items-start justify-between gap-12 lg:gap-16">
+<div class="w-full lg:w-[55%] flex flex-col justify-center pt-2 lg:pt-6">
+<h1 class="font-display text-display text-[#1C1917] dark:text-[#F5F5F4] tracking-tight leading-[1.1] max-w-xl text-balance">
+            Tahu untung rugi usaha kuliner kamu, <span class="text-[#0F766E] dark:text-[#2DD4BF]">setiap hari.</span>
+</h1>
+<p class="font-body-lg text-body-lg text-[#6B6B63] dark:text-[#A8A29E] mt-6 max-w-xl leading-relaxed">
+            Bebas dari pusing hitung resep manual dan bon tercecer. Sekali catat, margin bersih dan modal per porsi langsung terhitung otomatis.
+          </p>
+<div class="flex flex-wrap items-center gap-6 mt-8">
+<a class="inline-flex items-center justify-center h-11 px-6 rounded-lg bg-[#0F766E] dark:bg-[#2DD4BF] text-[#F0FDFA] dark:text-[#042F2E] font-headline-sm text-body-sm font-bold hover:bg-[#0d635c] dark:hover:bg-[#14B8A6] transition-colors active:translate-y-[1px] shadow-sm" data-path="daftar" href="#">
+              Coba Gratis Sekarang
+              <span class="material-symbols-outlined text-[18px] ml-2">arrow_forward</span>
+</a>
+<a class="inline-flex items-center font-headline-sm text-body-md font-semibold text-[#1C1917] dark:text-[#F5F5F4] hover:text-[#0F766E] dark:hover:text-[#2DD4BF] transition-colors py-2" data-path="demo" href="#demo">
+              Lihat demo 1 menit <span class="ml-1.5 font-normal">→</span>
+</a>
+</div>
+<div class="mt-14 max-w-xl">
+<blockquote class="bg-[#F4F4F1] dark:bg-[#1C1917] border border-[#E7E5DF] dark:border-[#2E2A27] rounded-xl p-5 shadow-sm transition-colors">
+<p class="font-body-md text-body-md text-[#44403C] dark:text-[#D6D3D1] leading-normal">
+                “Dulu omzet belasan juta tapi uang kas sering ludes tanpa tahu ke mana. Pas hitung pakai HPPKu, baru sadar resep kopi susu kita kemurahan dan cup-nya bocor margin 2 ribu per cup.”
+              </p>
+</blockquote>
+</div>
+</div>
+<div class="w-full lg:w-[45%] flex justify-center lg:justify-end">
+<div class="w-full max-w-md bg-[#FFFFFF] dark:bg-[#1C1917] rounded-xl p-6 shadow-xl border border-[#E7E5DF] dark:border-[#2E2A27] transition-all" style="box-shadow: 0 20px 40px -15px rgba(0, 0, 0, 0.15);">
+<div class="flex items-center justify-between pb-4 border-b border-[#E7E5DF] dark:border-[#2E2A27]/60">
+<div class="flex items-center gap-2">
+<span class="w-2.5 h-2.5 rounded-full bg-[#16A34A] dark:bg-[#4ADE80] inline-block shadow-[0_0_8px_rgba(74,222,128,0.5)]"></span>
+<span class="font-headline-sm text-body-sm font-semibold text-[#1C1917] dark:text-[#F5F5F4]">Kedai Kopi Ruang Tenang</span>
+</div>
+<span class="font-label-md text-label-md text-[#6B6B63] dark:text-[#A8A29E]">Hari ini, 14:20</span>
+</div>
+<div class="bg-[#F8F8F5] dark:bg-[#24201D] border border-[#E7E5DF] dark:border-[#2E2A27] rounded-lg p-5 mt-4 transition-colors">
+<div class="flex items-center justify-between">
+<span class="font-body-sm text-body-sm text-[#6B6B63] dark:text-[#A8A29E]">Laba Bersih Hari Ini</span>
+<div class="flex items-center gap-1 bg-[#DCFCE7] dark:bg-[#14532D]/60 border border-[#86EFAC] dark:border-[#4ADE80]/30 px-2 py-0.5 rounded-full text-[#15803D] dark:text-[#4ADE80]">
+<span class="material-symbols-outlined text-[14px]">arrow_upward</span>
+<span class="font-label-md text-label-md font-bold">+18,4%</span>
+</div>
+</div>
+<div class="mt-2 flex items-baseline gap-1">
+<span class="font-money-hero text-money-hero font-bold text-[#0F766E] dark:text-[#2DD4BF] tracking-tight">Rp 485.000</span>
+</div>
+<div class="mt-4">
+<div class="flex justify-between items-center text-label-md font-label-md mb-1.5">
+<span class="text-[#6B6B63] dark:text-[#A8A29E]">Target Harian: Rp 600.000</span>
+<span class="text-[#1C1917] dark:text-[#F5F5F4] font-semibold">81%</span>
+</div>
+<div class="w-full h-2 rounded-full bg-[#E5E5E0] dark:bg-[#292524] overflow-hidden">
+<div class="h-full bg-[#0F766E] dark:bg-[#2DD4BF] rounded-full transition-all" style="width: 81%"></div>
+</div>
+</div>
+</div>
+<div class="grid grid-cols-2 gap-3 mt-4">
+<div class="bg-[#F8F8F5] dark:bg-[#24201D] border border-[#E7E5DF] dark:border-[#2E2A27] rounded-lg p-3.5 transition-colors">
+<span class="font-body-sm text-body-sm text-[#6B6B63] dark:text-[#A8A29E] block">Omzet Masuk</span>
+<span class="font-money-md text-money-md text-[#1C1917] dark:text-[#F5F5F4] font-bold mt-1 block">Rp 850.000</span>
+<span class="font-label-md text-label-md text-[#16A34A] dark:text-[#4ADE80] mt-1 inline-block font-semibold">+12% vs kemarin</span>
+</div>
+<div class="bg-[#F8F8F5] dark:bg-[#24201D] border border-[#E7E5DF] dark:border-[#2E2A27] rounded-lg p-3.5 transition-colors">
+<span class="font-body-sm text-body-sm text-[#6B6B63] dark:text-[#A8A29E] block">Modal Belanja HPP</span>
+<span class="font-money-md text-money-md text-[#1C1917] dark:text-[#F5F5F4] font-bold mt-1 block">Rp 365.000</span>
+<span class="font-label-md text-label-md text-[#6B6B63] dark:text-[#A8A29E] mt-1 inline-block">42 pesanan terlayani</span>
+</div>
+</div>
+<div class="mt-4 bg-[#F8F8F5] dark:bg-[#24201D] border border-[#E7E5DF] dark:border-[#2E2A27] rounded-lg p-4 transition-colors">
+<div class="flex items-center justify-between mb-3">
+<div class="flex items-center gap-2">
+<div class="w-7 h-7 rounded bg-[#FEF3C7] dark:bg-[#422006] border border-[#F59E0B]/30 dark:border-[#FBBF24]/30 flex items-center justify-center text-[#B45309] dark:text-[#FBBF24]">
+<span class="material-symbols-outlined text-[16px]">coffee</span>
+</div>
+<div>
+<h2 class="font-headline-sm text-body-sm font-bold text-[#1C1917] dark:text-[#F5F5F4]">Es Kopi Susu Aren</h2>
+<span class="font-body-sm text-body-sm text-[#6B6B63] dark:text-[#A8A29E] text-[11px] block">1 Porsi (Cup 14oz)</span>
+</div>
+</div>
+<span class="bg-[#DCFCE7] dark:bg-[#14532D]/70 border border-[#86EFAC] dark:border-[#4ADE80]/30 text-[#15803D] dark:text-[#4ADE80] font-label-md text-label-md px-2 py-0.5 rounded-full font-bold">
+                  Margin 67%
+                </span>
+</div>
+<div class="bg-[#FFFFFF] dark:bg-[#1C1917] border border-[#E7E5DF] dark:border-[#2E2A27] rounded p-2.5 flex items-center justify-between text-body-sm font-body-sm transition-colors">
+<div>
+<span class="text-[#6B6B63] dark:text-[#A8A29E] block text-[11px]">HPP / Porsi</span>
+<span class="font-money-sm text-money-sm text-[#1C1917] dark:text-[#F5F5F4] font-semibold">Rp 5.950</span>
+</div>
+<div class="text-right">
+<span class="text-[#6B6B63] dark:text-[#A8A29E] block text-[11px]">Harga Jual</span>
+<span class="font-money-sm text-money-sm text-[#0F766E] dark:text-[#2DD4BF] font-bold">Rp 18.000</span>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</section><section class="w-full py-16 md:py-20 bg-[#FAFAF7] dark:bg-[#0C0A09] transition-colors" id="fitur"><div class="max-w-7xl mx-auto px-6 md:px-8"><div class="max-w-2xl mb-12"><span class="text-[12px] font-bold tracking-wider uppercase text-[#0F766E] dark:text-[#2DD4BF] block mb-2">FITUR UTAMA</span><h2 class="text-3xl md:text-4xl font-bold tracking-tight text-[#1C1917] dark:text-[#F5F5F4]">Semua yang Kamu Butuh untuk Tahu Untung Rugi</h2><p class="text-[#6B6B63] dark:text-[#A8A29E] text-base mt-3 leading-relaxed">Sederhana, praktis, dan dirancang khusus agar pemilik usaha kuliner tidak perlu pusing akuntansi.</p></div><div class="grid grid-cols-1 md:grid-cols-2 gap-6"><div class="bg-white dark:bg-[#1C1917] border border-[#E7E5DF] dark:border-[#2E2A27] rounded-2xl p-6 transition-all shadow-sm"><div class="w-12 h-12 rounded-xl bg-[#0F766E]/10 dark:bg-[#2DD4BF]/15 text-[#0F766E] dark:text-[#2DD4BF] flex items-center justify-center mb-5"><svg class="w-6 h-6 stroke-current" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" viewbox="0 0 24 24"><rect height="18" rx="2" width="16" x="4" y="3"></rect><line x1="8" x2="16" y1="7" y2="7"></line><line x1="8" x2="10" y1="11" y2="11"></line><line x1="14" x2="16" y1="11" y2="11"></line><line x1="8" x2="10" y1="15" y2="15"></line><line x1="14" x2="16" y1="15" y2="15"></line></svg></div><h3 class="text-xl font-bold text-[#1C1917] dark:text-[#F5F5F4] mb-2">Kalkulator HPP Otomatis</h3><p class="text-[#6B6B63] dark:text-[#A8A29E] text-sm leading-relaxed">Hitung HPP per porsi dari bahan baku secara real-time. Tahu persis modal satu porsi dan rekomendasi harga jual ideal.</p></div><div class="bg-white dark:bg-[#1C1917] border border-[#E7E5DF] dark:border-[#2E2A27] rounded-2xl p-6 transition-all shadow-sm"><div class="w-12 h-12 rounded-xl bg-[#FEF3C7] dark:bg-[#422006] text-[#B45309] dark:text-[#FBBF24] flex items-center justify-center mb-5"><svg class="w-6 h-6 stroke-current" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" viewbox="0 0 24 24"><path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z"></path><circle cx="12" cy="13" r="3"></circle></svg></div><h3 class="text-xl font-bold text-[#1C1917] dark:text-[#F5F5F4] mb-2">Scan Struk Belanja</h3><p class="text-[#6B6B63] dark:text-[#A8A29E] text-sm leading-relaxed">Cukup foto struk belanja pasar atau supermarket. Sistem otomatis catat pengeluaran dan update harga bahan baku.</p></div><div class="bg-white dark:bg-[#1C1917] border border-[#E7E5DF] dark:border-[#2E2A27] rounded-2xl p-6 transition-all shadow-sm"><div class="w-12 h-12 rounded-xl bg-[#FEF3C7] dark:bg-[#422006] text-[#B45309] dark:text-[#FBBF24] flex items-center justify-center mb-5"><svg class="w-6 h-6 stroke-current" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" viewbox="0 0 24 24"><path d="M20 12V8H6a2 2 0 0 1-2-2c0-1.1.9-2 2-2h12v4"></path><path d="M4 6v12a2 2 0 0 0 2 2h14v-4"></path><path d="M18 12a2 2 0 0 0 0 4h4v-4z"></path></svg></div><h3 class="text-xl font-bold text-[#1C1917] dark:text-[#F5F5F4] mb-2">Pantau Kas Harian</h3><p class="text-[#6B6B63] dark:text-[#A8A29E] text-sm leading-relaxed">Catat pemasukan dan pengeluaran harian dalam hitungan detik. Pantau apakah tokomu hari ini untung atau tekor.</p></div><div class="bg-white dark:bg-[#1C1917] border border-[#E7E5DF] dark:border-[#2E2A27] rounded-2xl p-6 transition-all shadow-sm"><div class="w-12 h-12 rounded-xl bg-[#0F766E]/10 dark:bg-[#2DD4BF]/15 text-[#0F766E] dark:text-[#2DD4BF] flex items-center justify-center mb-5"><svg class="w-6 h-6 stroke-current" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" viewbox="0 0 24 24"><line x1="18" x2="18" y1="20" y2="10"></line><line x1="12" x2="12" y1="20" y2="4"></line><line x1="6" x2="6" y1="20" y2="14"></line></svg></div><h3 class="text-xl font-bold text-[#1C1917] dark:text-[#F5F5F4] mb-2">Laporan Laba Rugi</h3><p class="text-[#6B6B63] dark:text-[#A8A29E] text-sm leading-relaxed">Laporan otomatis tersusun rapi tanpa rumus Excel. Tinggal export PDF atau Excel kapan saja untuk evaluasi usaha.</p></div></div></div></section>
+<section class="w-full py-16 md:py-20 bg-[#F5F5F0] dark:bg-[#292524] border-t border-b border-[#E7E5DF] dark:border-[#2E2A27] transition-colors" id="simulasi">
+<div class="max-w-5xl mx-auto px-margin md:px-margin-desktop">
+<div class="text-center max-w-2xl mx-auto mb-10">
+<span class="font-label-md text-label-md font-semibold tracking-wider uppercase text-[#0F766E] dark:text-[#2DD4BF] block mb-2">COBA SEKARANG</span>
+<h2 class="font-headline-lg text-2xl md:text-3xl lg:text-display font-bold text-[#1C1917] dark:text-[#F5F5F4] tracking-tight">Hitung HPP Menu Kamu dalam 10 Detik</h2>
+<p class="font-body-md text-body-md text-[#6B6B63] dark:text-[#A8A29E] mt-3">Coba langsung kalkulator resep di bawah ini tanpa perlu daftar atau login.</p>
+</div>
+<div class="grid grid-cols-1 lg:grid-cols-2 gap-6 items-stretch">
+<!-- Left Column (Input Panel) -->
+<div class="bg-[#FFFFFF] dark:bg-[#1C1917] border border-[#E7E5DF] dark:border-[#2E2A27] rounded-lg p-6 space-y-4 shadow-sm">
+<div class="flex items-center justify-between pb-3 border-b border-[#E7E5DF] dark:border-[#2E2A27]">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-[20px] text-[#0F766E] dark:text-[#2DD4BF]">restaurant_menu</span>
+<h3 class="font-headline-sm text-body-md font-bold text-[#1C1917] dark:text-[#F5F5F4]">Rincian Resep &amp; Bahan</h3>
+</div>
+<span class="bg-[#0F766E]/10 dark:bg-[#2DD4BF]/15 text-[#0F766E] dark:text-[#2DD4BF] font-label-md text-label-md px-2.5 py-0.5 rounded-full font-semibold">Live Input</span>
+</div>
+<div>
+<label class="block font-headline-sm text-body-sm font-semibold text-[#1C1917] dark:text-[#F5F5F4] mb-1.5" for="nama-menu-input">Nama Menu</label>
+<input class="w-full h-11 rounded-md border border-[#E7E5DF] dark:border-[#2E2A27] bg-[#FAFAF7] dark:bg-[#24201D] px-3 text-sm text-[#1C1917] dark:text-[#F5F5F4] focus:outline-none focus:border-[#0F766E] dark:focus:border-[#2DD4BF]" id="nama-menu-input" type="text" value="Es Kopi Susu Aren"/>
+</div>
+<div>
+<div class="flex items-center justify-between text-xs text-[#6B6B63] dark:text-[#A8A29E] font-medium mb-1.5 px-0.5">
+<span class="">Bahan Baku</span>
+<span class="">Biaya Satuan</span>
+</div>
+<div class="space-y-2.5" id="ingredients-container">
+<div class="flex items-center gap-2 ingredient-row">
+<input class="flex-1 h-9 rounded-md border border-[#E7E5DF] dark:border-[#2E2A27] bg-[#FAFAF7] dark:bg-[#24201D] px-3 text-xs text-[#1C1917] dark:text-[#F5F5F4]" placeholder="Nama bahan" type="text" value="Kopi Espresso (18g)"/>
+<div class="relative w-32">
+<span class="absolute left-2.5 top-1/2 -translate-y-1/2 font-money-sm text-xs text-[#6B6B63] dark:text-[#A8A29E]">Rp</span>
+<input class="w-full h-9 rounded-md border border-[#E7E5DF] dark:border-[#2E2A27] bg-[#FAFAF7] dark:bg-[#24201D] pl-8 pr-2.5 text-xs text-right font-money-sm font-semibold text-[#1C1917] dark:text-[#F5F5F4] ingredient-cost focus:outline-none focus:border-[#0F766E] dark:focus:border-[#2DD4BF]" type="number" value="3200"/>
+</div>
+</div>
+<div class="flex items-center gap-2 ingredient-row">
+<input class="flex-1 h-9 rounded-md border border-[#E7E5DF] dark:border-[#2E2A27] bg-[#FAFAF7] dark:bg-[#24201D] px-3 text-xs text-[#1C1917] dark:text-[#F5F5F4]" placeholder="Nama bahan" type="text" value="Susu UHT (120ml)"/>
+<div class="relative w-32">
+<span class="absolute left-2.5 top-1/2 -translate-y-1/2 font-money-sm text-xs text-[#6B6B63] dark:text-[#A8A29E]">Rp</span>
+<input class="w-full h-9 rounded-md border border-[#E7E5DF] dark:border-[#2E2A27] bg-[#FAFAF7] dark:bg-[#24201D] pl-8 pr-2.5 text-xs text-right font-money-sm font-semibold text-[#1C1917] dark:text-[#F5F5F4] ingredient-cost focus:outline-none focus:border-[#0F766E] dark:focus:border-[#2DD4BF]" type="number" value="1800"/>
+</div>
+</div>
+<div class="flex items-center gap-2 ingredient-row">
+<input class="flex-1 h-9 rounded-md border border-[#E7E5DF] dark:border-[#2E2A27] bg-[#FAFAF7] dark:bg-[#24201D] px-3 text-xs text-[#1C1917] dark:text-[#F5F5F4]" placeholder="Nama bahan" type="text" value="Gula Aren (15ml)"/>
+<div class="relative w-32">
+<span class="absolute left-2.5 top-1/2 -translate-y-1/2 font-money-sm text-xs text-[#6B6B63] dark:text-[#A8A29E]">Rp</span>
+<input class="w-full h-9 rounded-md border border-[#E7E5DF] dark:border-[#2E2A27] bg-[#FAFAF7] dark:bg-[#24201D] pl-8 pr-2.5 text-xs text-right font-money-sm font-semibold text-[#1C1917] dark:text-[#F5F5F4] ingredient-cost focus:outline-none focus:border-[#0F766E] dark:focus:border-[#2DD4BF]" type="number" value="950"/>
+</div>
+</div>
+</div>
+<button class="mt-2.5 w-full py-2 border border-dashed border-[#E7E5DF] dark:border-[#2E2A27] hover:border-[#0F766E] dark:hover:border-[#2DD4BF] text-[#6B6B63] dark:text-[#A8A29E] hover:text-[#0F766E] dark:hover:text-[#2DD4BF] rounded-md font-body-sm text-xs font-medium transition-colors flex items-center justify-center gap-1.5" id="btn-add-ingredient" type="button">
+<span class="material-symbols-outlined text-[16px]">add</span>
+<span class="">Tambah Bahan</span>
+</button>
+</div>
+<div class="border-t border-[#E7E5DF] dark:border-[#2E2A27] pt-3">
+<label class="block font-headline-sm text-body-sm font-semibold text-[#1C1917] dark:text-[#F5F5F4] mb-1.5" for="simulasi-overhead">Biaya Overhead (listrik, cup, sedotan, dll)</label>
+<div class="relative">
+<span class="absolute left-3 top-1/2 -translate-y-1/2 font-money-sm text-sm text-[#6B6B63] dark:text-[#A8A29E]">Rp</span>
+<input class="w-full h-10 rounded-md border border-[#E7E5DF] dark:border-[#2E2A27] bg-[#FAFAF7] dark:bg-[#24201D] pl-9 pr-3 text-sm font-money-sm font-semibold text-[#1C1917] dark:text-[#F5F5F4] focus:outline-none focus:border-[#0F766E] dark:focus:border-[#2DD4BF]" id="simulasi-overhead" type="number" value="500"/>
+</div>
+</div>
+</div>
+<!-- Right Column (Live Result Panel) -->
+<div class="bg-[#FFFFFF] dark:bg-[#1C1917] border-2 border-[#0F766E]/40 dark:border-[#2DD4BF]/40 rounded-lg p-6 flex flex-col justify-between shadow-sm">
+<div>
+<div class="flex items-center justify-between pb-3 border-b border-[#E7E5DF] dark:border-[#2E2A27]">
+<span class="font-label-md text-label-md font-bold text-[#0F766E] dark:text-[#2DD4BF] tracking-wider uppercase">HASIL PERHITUNGAN LANGSUNG</span>
+<span class="material-symbols-outlined text-[#0F766E] dark:text-[#2DD4BF] text-[18px]">verified</span>
+</div>
+<div class="mt-4">
+<span class="font-label-md text-label-md uppercase tracking-wider text-[#6B6B63] dark:text-[#A8A29E] block mb-1">Total HPP per Porsi</span>
+<div class="font-money-hero text-3xl md:text-4xl font-bold text-[#0F766E] dark:text-[#2DD4BF] tracking-tight" id="simulasi-total-hpp">Rp 6.450</div>
+<p class="font-body-sm text-xs text-[#6B6B63] dark:text-[#A8A29E] mt-1.5" id="simulasi-breakdown-hint">3 bahan baku (Rp 5.950) + overhead (Rp 500)</p>
+</div>
+<div class="border-t border-[#E7E5DF] dark:border-[#2E2A27] my-5 pt-4">
+<label class="block font-headline-sm text-body-sm font-semibold text-[#1C1917] dark:text-[#F5F5F4] mb-1.5" for="simulasi-harga-jual">Rencana Harga Jual</label>
+<div class="relative">
+<span class="absolute left-3 top-1/2 -translate-y-1/2 font-money-sm text-sm text-[#6B6B63] dark:text-[#A8A29E]">Rp</span>
+<input class="w-full h-10 rounded-md border border-[#E7E5DF] dark:border-[#2E2A27] bg-[#FAFAF7] dark:bg-[#24201D] pl-9 pr-3 text-sm font-money-sm font-bold text-[#1C1917] dark:text-[#F5F5F4] focus:outline-none focus:border-[#0F766E] dark:focus:border-[#2DD4BF]" id="simulasi-harga-jual" type="number" value="18000"/>
+</div>
+<div class="mt-4 bg-[#F8F8F5] dark:bg-[#24201D] border border-[#E7E5DF] dark:border-[#2E2A27] rounded-lg p-3.5 space-y-3">
+<div class="flex items-center justify-between">
+<span class="font-body-sm text-xs text-[#6B6B63] dark:text-[#A8A29E]">Estimasi Laba Bersih / Porsi</span>
+<span class="font-money-sm text-sm font-bold text-[#16A34A] dark:text-[#4ADE80]" id="simulasi-laba-bersih">Rp 11.550</span>
+</div>
+<div>
+<div class="flex items-center justify-between text-xs mb-1.5">
+<span class="font-body-sm text-[#6B6B63] dark:text-[#A8A29E]">Persentase Margin</span>
+<span class="bg-[#DCFCE7] dark:bg-[#14532D]/70 border border-[#86EFAC] dark:border-[#4ADE80]/30 text-[#15803D] dark:text-[#4ADE80] font-label-md text-label-md px-2 py-0.5 rounded-full font-bold" id="simulasi-margin-badge">Margin 64%</span>
+</div>
+<div class="w-full h-2 rounded-full bg-[#E5E5E0] dark:bg-[#292524] overflow-hidden">
+<div class="h-full bg-[#16A34A] dark:bg-[#4ADE80] rounded-full transition-all duration-300" id="simulasi-margin-bar" style="width: 64%;"></div>
+</div>
+</div>
+<div class="flex items-center gap-1.5 text-[11px] text-[#16A34A] dark:text-[#4ADE80] font-semibold" id="simulasi-margin-status"><span class="material-symbols-outlined text-[14px]">check_circle</span><span class="">Margin Sehat (Target F&amp;B &gt; 50%)</span></div>
+</div>
+</div>
+</div>
+<div class="mt-6 pt-3">
+<a class="inline-flex items-center justify-center w-full py-3 px-6 rounded-md bg-[#0F766E] hover:bg-[#0d635c] dark:bg-[#2DD4BF] dark:hover:bg-[#14B8A6] text-[#FFFFFF] dark:text-[#042F2E] font-headline-sm text-sm font-bold transition-colors active:translate-y-[1px]" href="#">
+<span class="">Simpan &amp; Lihat Menu Lainnya →</span>
+</a>
+<p class="font-body-sm text-xs text-[#6B6B63] dark:text-[#A8A29E] text-center mt-2 leading-relaxed">
+Ini baru simulasi 1 menu. Daftar gratis untuk simpan ratusan resep, scan struk belanja pasar, dan pantau laba harian otomatis.
+</p>
+</div>
+</div>
+</div>
+</div>
+</section>
+<!-- Pricing Section -->
+<section class="w-full py-16 md:py-24 bg-[#FAFAF7] dark:bg-[#0C0A09] relative overflow-hidden transition-colors" id="harga">
+<div class="pointer-events-none absolute inset-0 overflow-hidden z-0" id="pricing-meteors"></div>
+<div class="max-w-5xl mx-auto px-margin md:px-margin-desktop relative z-10">
+<div class="text-center max-w-2xl mx-auto mb-12 md:mb-16">
+<span class="inline-block px-3 py-1 rounded-full bg-[#0F766E]/10 dark:bg-[#2DD4BF]/15 text-[#0F766E] dark:text-[#2DD4BF] font-label-md text-label-md font-bold tracking-wider uppercase mb-3">HARGA</span>
+<h2 class="font-headline-lg text-3xl md:text-4xl font-bold tracking-tight text-[#1C1917] dark:text-[#F5F5F4]">Mulai Gratis, Upgrade Kalau Sudah Siap</h2>
+<p class="font-body-lg text-body-md md:text-body-lg text-[#6B6B63] dark:text-[#A8A29E] mt-3">Tanpa kontrak, bisa berhenti kapan saja sesuai kebutuhan usaha kamu.</p>
+</div>
+<div class="grid grid-cols-1 md:grid-cols-2 gap-6 items-stretch max-w-4xl mx-auto">
+<!-- Card 1 — FREE -->
+<div class="bg-white dark:bg-[#1C1917] border border-[#E7E5DF] dark:border-[#2E2A27] rounded-2xl p-6 md:p-8 flex flex-col justify-between shadow-sm transition-all">
+<div>
+<h3 class="font-headline-sm text-xl font-bold text-[#1C1917] dark:text-[#F5F5F4]">Gratis</h3>
+<div class="mt-4 mb-2">
+<span class="font-money-hero text-3xl md:text-4xl font-bold text-[#1C1917] dark:text-[#F5F5F4] tracking-tight">Rp 0</span>
+<span class="block font-body-sm text-xs text-[#6B6B63] dark:text-[#A8A29E] mt-1">/selamanya</span>
+</div>
+<p class="font-body-md text-sm text-[#6B6B63] dark:text-[#A8A29E] mt-2">Buat kamu yang baru mulai rapiin catatan usaha</p>
+<div class="h-px w-full bg-[#E7E5DF] dark:border-t dark:border-[#2E2A27] my-6"></div>
+<ul class="space-y-3.5">
+<li class="flex items-center gap-3 text-body-sm text-sm text-[#1C1917] dark:text-[#F5F5F4]">
+<svg class="w-5 h-5 text-[#0F766E] dark:text-[#2DD4BF] flex-shrink-0" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" viewbox="0 0 24 24"><polyline points="20 6 9 17 4 12"></polyline></svg>
+<span class="">10x Scan Struk/bulan</span>
+</li>
+<li class="flex items-center gap-3 text-body-sm text-sm text-[#1C1917] dark:text-[#F5F5F4]">
+<svg class="w-5 h-5 text-[#0F766E] dark:text-[#2DD4BF] flex-shrink-0" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" viewbox="0 0 24 24"><polyline points="20 6 9 17 4 12"></polyline></svg>
+<span class="">Hitung HPP tanpa batas resep</span>
+</li>
+<li class="flex items-center gap-3 text-body-sm text-sm text-[#1C1917] dark:text-[#F5F5F4]">
+<svg class="w-5 h-5 text-[#0F766E] dark:text-[#2DD4BF] flex-shrink-0" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" viewbox="0 0 24 24"><polyline points="20 6 9 17 4 12"></polyline></svg>
+<span class="">Catat kas manual</span>
+</li>
+<li class="flex items-center gap-3 text-body-sm text-sm text-[#1C1917] dark:text-[#F5F5F4]">
+<svg class="w-5 h-5 text-[#0F766E] dark:text-[#2DD4BF] flex-shrink-0" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" viewbox="0 0 24 24"><polyline points="20 6 9 17 4 12"></polyline></svg>
+<span class="">1 pengguna</span>
+</li>
+</ul>
+</div>
+<div class="mt-8 pt-2">
+<a class="inline-flex items-center justify-center w-full py-3 px-6 rounded-lg border border-[#E7E5DF] dark:border-[#2E2A27] bg-transparent hover:bg-[#F4F4F1] dark:hover:bg-[#24201D] text-[#1C1917] dark:text-[#F5F5F4] font-headline-sm text-sm font-semibold transition-colors active:translate-y-[1px]" href="#">
+Mulai Gratis
+</a>
+</div>
+</div>
+<!-- Card 2 — PRO -->
+<div class="bg-white dark:bg-[#1C1917] border-2 border-[#0F766E] dark:border-[#2DD4BF] rounded-2xl p-6 md:p-8 flex flex-col justify-between relative shadow-md transition-all">
+<div class="absolute -top-3.5 right-6">
+<span class="inline-flex items-center px-3 py-1 rounded-full bg-[#FEF3C7] dark:bg-[#422006] text-[#B45309] dark:text-[#FBBF24] border border-[#F59E0B]/30 dark:border-[#FBBF24]/30 font-label-md text-xs font-bold tracking-wide">Paling Populer</span>
+</div>
+<div>
+<h3 class="font-headline-sm text-xl font-bold text-[#0F766E] dark:text-[#2DD4BF]">Pro</h3>
+<div class="mt-4 mb-2">
+<span class="font-money-hero text-3xl md:text-4xl font-bold text-[#0F766E] dark:text-[#2DD4BF] tracking-tight">Rp 49.000</span>
+<span class="block font-body-sm text-xs text-[#6B6B63] dark:text-[#A8A29E] mt-1">/bulan</span>
+</div>
+<p class="font-body-md text-sm text-[#6B6B63] dark:text-[#A8A29E] mt-2">Buat usaha yang mau auto-pilot soal keuangan</p>
+<div class="h-px w-full bg-[#E7E5DF] dark:border-t dark:border-[#2E2A27] my-6"></div>
+<ul class="space-y-3.5">
+<li class="flex items-center gap-3 text-body-sm text-sm text-[#1C1917] dark:text-[#F5F5F4] font-semibold">
+<svg class="w-5 h-5 text-[#0F766E] dark:text-[#2DD4BF] flex-shrink-0" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" viewbox="0 0 24 24"><polyline points="20 6 9 17 4 12"></polyline></svg>
+<span class="">Semua fitur Gratis</span>
+</li>
+<li class="flex items-center gap-3 text-body-sm text-sm text-[#1C1917] dark:text-[#F5F5F4]">
+<svg class="w-5 h-5 text-[#0F766E] dark:text-[#2DD4BF] flex-shrink-0" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" viewbox="0 0 24 24"><polyline points="20 6 9 17 4 12"></polyline></svg>
+<span class="">Scan Struk tanpa batas</span>
+</li>
+<li class="flex items-center gap-3 text-body-sm text-sm text-[#1C1917] dark:text-[#F5F5F4]">
+<svg class="w-5 h-5 text-[#0F766E] dark:text-[#2DD4BF] flex-shrink-0" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" viewbox="0 0 24 24"><polyline points="20 6 9 17 4 12"></polyline></svg>
+<span class="">Laporan Laba Rugi otomatis + export</span>
+</li>
+<li class="flex items-center gap-3 text-body-sm text-sm text-[#1C1917] dark:text-[#F5F5F4]">
+<svg class="w-5 h-5 text-[#0F766E] dark:text-[#2DD4BF] flex-shrink-0" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" viewbox="0 0 24 24"><polyline points="20 6 9 17 4 12"></polyline></svg>
+<span class="">Saran harga jual dari AI</span>
+</li>
+<li class="flex items-center gap-3 text-body-sm text-sm text-[#1C1917] dark:text-[#F5F5F4]">
+<svg class="w-5 h-5 text-[#0F766E] dark:text-[#2DD4BF] flex-shrink-0" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" viewbox="0 0 24 24"><polyline points="20 6 9 17 4 12"></polyline></svg>
+<span class="">Sampai 3 pengguna tim</span>
+</li>
+<li class="flex items-center gap-3 text-body-sm text-sm text-[#1C1917] dark:text-[#F5F5F4]">
+<svg class="w-5 h-5 text-[#0F766E] dark:text-[#2DD4BF] flex-shrink-0" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" viewbox="0 0 24 24"><polyline points="20 6 9 17 4 12"></polyline></svg>
+<span class="">Backup otomatis ke Cloud</span>
+</li>
+</ul>
+</div>
+<div class="mt-8 pt-2">
+<a class="inline-flex items-center justify-center w-full py-3 px-6 rounded-lg bg-[#0F766E] hover:bg-[#0d635c] dark:bg-[#2DD4BF] dark:hover:bg-[#14B8A6] text-[#FFFFFF] dark:text-[#042F2E] font-headline-sm text-sm font-bold transition-colors active:translate-y-[1px] shadow-sm" href="#">
+Coba Pro 14 Hari Gratis
+</a>
+</div>
+</div>
+</div>
+<div class="text-center mt-10">
+<a class="font-body-md text-sm text-[#6B6B63] dark:text-[#A8A29E] hover:text-[#0F766E] dark:hover:text-[#2DD4BF] transition-colors inline-flex items-center gap-1" href="#">
+<span class="">Butuh paket khusus untuk banyak cabang? Hubungi kami →</span>
+</a>
+</div>
+</div>
+</section><section class="w-full py-16 md:py-20 bg-[#0F766E] text-white px-6 transition-colors" id="cta-section"><div class="max-w-4xl mx-auto text-center"><h2 class="font-headline-lg text-3xl md:text-4xl font-extrabold tracking-tight text-white">Siap Tahu Untung Rugi Usaha Kamu Hari Ini?</h2><p class="font-body-md text-[#F0FDFA] opacity-90 text-base max-w-xl mx-auto mt-3 leading-relaxed">Gratis selamanya untuk fitur dasar. Tanpa kartu kredit.</p><div class="mt-8 flex flex-col items-center justify-center"><a class="inline-flex items-center justify-center h-12 px-8 rounded-lg font-semibold bg-white text-[#0F766E] hover:bg-[#F0FDFA] transition-colors shadow-sm gap-2 active:translate-y-[1px]" data-path="daftar" href="#">Mulai Gratis Sekarang →</a><a class="mt-4 text-sm text-[#F0FDFA] hover:text-white underline transition cursor-pointer" data-path="demo" href="#demo">atau lihat demo 1 menit</a></div></div></section>
+</div></main><footer class="w-full bg-[#1C1917] text-[#F5F5F4] border-t border-[#2E2A27] transition-colors"><div class="max-w-7xl mx-auto px-6 py-16"><div class="grid grid-cols-1 md:grid-cols-4 gap-8"><div class="space-y-4"><div class="flex items-center gap-2"><div class="w-9 h-9 rounded-lg bg-[#0F766E] flex items-center justify-center"><span class="material-symbols-outlined text-white text-[20px]">calculate</span></div><span class="font-headline-md text-xl font-bold tracking-tight text-white">HPP<span class="text-[#FBBF24]">Ku</span></span></div><p class="text-sm text-[#A8A29E] leading-relaxed max-w-xs">Aplikasi hitung HPP &amp; catat kas untuk UMKM kuliner Indonesia.</p><div class="flex items-center gap-3 pt-2"><a class="w-8 h-8 rounded-full border border-[#2E2A27] flex items-center justify-center text-[#A8A29E] hover:text-white hover:border-[#A8A29E] transition-colors" href="#" title="Instagram"><span class="material-symbols-outlined text-[16px]">photo_camera</span></a><a class="w-8 h-8 rounded-full border border-[#2E2A27] flex items-center justify-center text-[#A8A29E] hover:text-white hover:border-[#A8A29E] transition-colors" href="#" title="TikTok"><span class="material-symbols-outlined text-[16px]">music_note</span></a><a class="w-8 h-8 rounded-full border border-[#2E2A27] flex items-center justify-center text-[#A8A29E] hover:text-white hover:border-[#A8A29E] transition-colors" href="#" title="WhatsApp"><span class="material-symbols-outlined text-[16px]">chat</span></a></div></div><div><h4 class="text-xs font-bold uppercase tracking-wider text-[#F5F5F4] mb-4">Produk</h4><div class="flex flex-col space-y-2.5 text-sm text-[#A8A29E]"><a class="hover:text-white transition-colors" href="#fitur">Fitur</a><a class="hover:text-white transition-colors" href="#simulasi">Simulasi HPP</a><a class="hover:text-white transition-colors" href="#harga">Harga</a><a class="hover:text-white transition-colors" href="#">Update Terbaru</a></div></div><div><h4 class="text-xs font-bold uppercase tracking-wider text-[#F5F5F4] mb-4">Perusahaan</h4><div class="flex flex-col space-y-2.5 text-sm text-[#A8A29E]"><a class="hover:text-white transition-colors" href="#">Tentang Kami</a><a class="hover:text-white transition-colors" href="#">Blog</a><a class="hover:text-white transition-colors" href="#">Karir</a><a class="hover:text-white transition-colors" href="#">Kontak</a></div></div><div><h4 class="text-xs font-bold uppercase tracking-wider text-[#F5F5F4] mb-4">Bantuan</h4><div class="flex flex-col space-y-2.5 text-sm text-[#A8A29E]"><a class="hover:text-white transition-colors" href="#">Pusat Bantuan</a><div><a class="hover:text-white transition-colors block" href="#">Hubungi Kami</a><span class="text-xs text-[#78716C] block mt-0.5">halo@hppku.id · +62 812-3456-7890</span></div><a class="hover:text-white transition-colors" href="#">Syarat &amp; Ketentuan</a><a class="hover:text-white transition-colors" href="#">Kebijakan Privasi</a></div></div></div></div><div class="border-t border-[#2E2A27]"><div class="max-w-7xl mx-auto px-6 py-6 flex flex-col md:flex-row items-center justify-between text-xs text-[#78716C] gap-4"><div class="">© 2026 HPPKu. Hak cipta dilindungi.</div><div class="flex items-center gap-1.5"><span class="">🇮🇩 Indonesia · IDR (Rp)</span></div></div></div></footer><script>
+(function() {
+  const toggleBtn = document.getElementById('theme-toggle-btn');
+  const toggleIcon = document.getElementById('theme-toggle-icon');
+  const toggleLabel = document.getElementById('theme-toggle-label');
+  const heroSection = document.getElementById('hero-section');
+  const root = document.documentElement;
+
+  function updateThemeDisplay(isDark) {
+    if (isDark) {
+      root.classList.add('dark');
+      if (toggleIcon) toggleIcon.textContent = 'dark_mode';
+      if (toggleLabel) toggleLabel.textContent = 'Dark Mode';
+      if (heroSection) {
+        heroSection.style.background = 'radial-gradient(circle at 18% 25%, rgba(20, 56, 52, 0.4) 0%, rgba(12, 10, 9, 1) 70%)';
+      }
+    } else {
+      root.classList.remove('dark');
+      if (toggleIcon) toggleIcon.textContent = 'light_mode';
+      if (toggleLabel) toggleLabel.textContent = 'Light Mode';
+      if (heroSection) {
+        heroSection.style.background = 'radial-gradient(circle at 20% 20%, rgba(204, 251, 241, 0.4) 0%, rgba(254, 243, 199, 0.28) 45%, #FAFAF7 80%)';
+      }
+    }
+  }
+
+  // Set initial theme based on HTML class
+  const isInitiallyDark = root.classList.contains('dark');
+  updateThemeDisplay(isInitiallyDark);
+
+  if (toggleBtn) {
+    toggleBtn.addEventListener('click', function() {
+      const willBeDark = !root.classList.contains('dark');
+      updateThemeDisplay(willBeDark);
+    });
+  }
+
+  // Meteor Spawner Function (Top to Bottom Falling with subtle diagonal drift)
+  function initMeteors(containerId, count = 22, angle = 12) {
+    const container = document.getElementById(containerId);
+    if (!container) return;
+    container.innerHTML = '';
+    const width = container.offsetWidth || window.innerWidth;
+    for (let i = 0; i < count; i++) {
+      const meteor = document.createElement('span');
+      meteor.className = 'animate-meteor meteor-item';
+      const minDelay = 0.1, maxDelay = 4.0;
+      const minDuration = 2.5, maxDuration = 5.5;
+      const delay = (Math.random() * (maxDelay - minDelay) + minDelay).toFixed(2);
+      const duration = (Math.random() * (maxDuration - minDuration) + minDuration).toFixed(2);
+      const left = Math.floor(Math.random() * (width + 120)) - 60;
+      // Start above or around the top boundary so they fall down smoothly
+      const startTop = Math.floor(Math.random() * -120) - 20;
+      const individualAngle = (angle + (Math.random() * 8 - 4)).toFixed(1);
+
+      meteor.style.setProperty('--angle', `${individualAngle}deg`);
+      meteor.style.top = `${startTop}px`;
+      meteor.style.left = `${left}px`;
+      meteor.style.animationDelay = `${delay}s`;
+      meteor.style.animationDuration = `${duration}s`;
+
+      const tail = document.createElement('div');
+      tail.className = 'meteor-tail';
+      meteor.appendChild(tail);
+      container.appendChild(meteor);
+    }
+  }
+
+  initMeteors('hero-meteors', 24, 14);
+  initMeteors('pricing-meteors', 24, 14);
+
+  window.addEventListener('resize', () => {
+    initMeteors('hero-meteors', 24, 14);
+    initMeteors('pricing-meteors', 24, 14);
+  });
+
+  // Live Simulasi HPP Calculation
+  const ingredientsContainer = document.getElementById('ingredients-container');
+  const overheadInput = document.getElementById('simulasi-overhead');
+  const hargaJualInput = document.getElementById('simulasi-harga-jual');
+  const totalHppDisplay = document.getElementById('simulasi-total-hpp');
+  const breakdownHint = document.getElementById('simulasi-breakdown-hint');
+  const labaBersihDisplay = document.getElementById('simulasi-laba-bersih');
+  const marginBadge = document.getElementById('simulasi-margin-badge');
+  const marginBar = document.getElementById('simulasi-margin-bar');
+  const marginStatus = document.getElementById('simulasi-margin-status');
+  const btnAddIngredient = document.getElementById('btn-add-ingredient');
+
+  function formatIDR(val) {
+    return 'Rp ' + Math.max(0, Math.round(val)).toLocaleString('id-ID');
+  }
+
+  function calculateSimulasi() {
+    const costInputs = ingredientsContainer.querySelectorAll('.ingredient-cost');
+    let totalBahan = 0;
+    let countBahan = 0;
+
+    costInputs.forEach(input => {
+      const v = parseFloat(input.value) || 0;
+      totalBahan += v;
+      countBahan++;
+    });
+
+    const overhead = parseFloat(overheadInput ? overheadInput.value : 0) || 0;
+    const totalHPP = totalBahan + overhead;
+    const hargaJual = parseFloat(hargaJualInput ? hargaJualInput.value : 0) || 0;
+    const labaBersih = hargaJual - totalHPP;
+    const marginPct = hargaJual > 0 ? (labaBersih / hargaJual) * 100 : 0;
+    const roundedMargin = Math.round(marginPct);
+
+    if (totalHppDisplay) {
+      totalHppDisplay.textContent = formatIDR(totalHPP);
+    }
+    if (breakdownHint) {
+      breakdownHint.textContent = `${countBahan} bahan baku (${formatIDR(totalBahan)}) + overhead (${formatIDR(overhead)})`;
+    }
+    if (labaBersihDisplay) {
+      labaBersihDisplay.textContent = (labaBersih < 0 ? '- ' : '') + formatIDR(Math.abs(labaBersih));
+      if (labaBersih < 0) {
+        labaBersihDisplay.className = 'font-money-sm text-sm font-bold text-[#DC2626] dark:text-[#EF4444]';
+      } else {
+        labaBersihDisplay.className = 'font-money-sm text-sm font-bold text-[#16A34A] dark:text-[#4ADE80]';
+      }
+    }
+    if (marginBadge) {
+      marginBadge.textContent = `Margin ${roundedMargin}%`;
+      if (roundedMargin >= 50) {
+        marginBadge.className = 'bg-[#DCFCE7] dark:bg-[#14532D]/70 border border-[#86EFAC] dark:border-[#4ADE80]/30 text-[#15803D] dark:text-[#4ADE80] font-label-md text-label-md px-2 py-0.5 rounded-full font-bold';
+      } else if (roundedMargin >= 30) {
+        marginBadge.className = 'bg-[#FEF3C7] dark:bg-[#422006]/70 border border-[#FCD34D] dark:border-[#FBBF24]/30 text-[#B45309] dark:text-[#FBBF24] font-label-md text-label-md px-2 py-0.5 rounded-full font-bold';
+      } else {
+        marginBadge.className = 'bg-[#FEE2E2] dark:bg-[#7F1D1D]/70 border border-[#FCA5A5] dark:border-[#F87171]/30 text-[#B91C1C] dark:text-[#F87171] font-label-md text-label-md px-2 py-0.5 rounded-full font-bold';
+      }
+    }
+    if (marginBar) {
+      const clampedPct = Math.max(0, Math.min(100, roundedMargin));
+      marginBar.style.width = clampedPct + '%';
+      if (roundedMargin >= 50) {
+        marginBar.className = 'h-full bg-[#16A34A] dark:bg-[#4ADE80] rounded-full transition-all duration-300';
+      } else if (roundedMargin >= 30) {
+        marginBar.className = 'h-full bg-[#D97706] dark:bg-[#FBBF24] rounded-full transition-all duration-300';
+      } else {
+        marginBar.className = 'h-full bg-[#DC2626] dark:bg-[#EF4444] rounded-full transition-all duration-300';
+      }
+    }
+    if (marginStatus) {
+      if (roundedMargin >= 50) {
+        marginStatus.className = 'flex items-center gap-1.5 text-[11px] text-[#16A34A] dark:text-[#4ADE80] font-semibold';
+        marginStatus.innerHTML = '<span class="material-symbols-outlined text-[14px]">check_circle</span><span>Margin Sehat (Target F&B > 50%)</span>';
+      } else if (roundedMargin >= 30) {
+        marginStatus.className = 'flex items-center gap-1.5 text-[11px] text-[#D97706] dark:text-[#FBBF24] font-semibold';
+        marginStatus.innerHTML = '<span class="material-symbols-outlined text-[14px]">warning</span><span>Margin Sedang (Perlu Perhatian)</span>';
+      } else {
+        marginStatus.className = 'flex items-center gap-1.5 text-[11px] text-[#DC2626] dark:text-[#EF4444] font-semibold';
+        marginStatus.innerHTML = '<span class="material-symbols-outlined text-[14px]">error</span><span>Margin Rendah/Kritis!</span>';
+      }
+    }
+  }
+
+  function bindInputListeners() {
+    if (ingredientsContainer) {
+      ingredientsContainer.querySelectorAll('.ingredient-cost').forEach(input => {
+        input.oninput = calculateSimulasi;
+      });
+    }
+    if (overheadInput) overheadInput.oninput = calculateSimulasi;
+    if (hargaJualInput) hargaJualInput.oninput = calculateSimulasi;
+  }
+
+  if (btnAddIngredient && ingredientsContainer) {
+    btnAddIngredient.addEventListener('click', function() {
+      const row = document.createElement('div');
+      row.className = 'flex items-center gap-2 ingredient-row';
+      row.innerHTML = `
+        <input class="flex-1 h-9 rounded-md border border-[#E7E5DF] dark:border-[#2E2A27] bg-[#FAFAF7] dark:bg-[#24201D] px-3 text-xs text-[#1C1917] dark:text-[#F5F5F4]" placeholder="Nama bahan tambahan" type="text" value="Bahan Tambahan" />
+        <div class="relative w-32">
+          <span class="absolute left-2.5 top-1/2 -translate-y-1/2 font-money-sm text-xs text-[#6B6B63] dark:text-[#A8A29E]">Rp</span>
+          <input class="w-full h-9 rounded-md border border-[#E7E5DF] dark:border-[#2E2A27] bg-[#FAFAF7] dark:bg-[#24201D] pl-8 pr-2.5 text-xs text-right font-money-sm font-semibold text-[#1C1917] dark:text-[#F5F5F4] ingredient-cost focus:outline-none focus:border-[#0F766E] dark:focus:border-[#2DD4BF]" type="number" value="500" />
+        </div>
+      `;
+      ingredientsContainer.appendChild(row);
+      bindInputListeners();
+      calculateSimulasi();
+    });
+  }
+
+  bindInputListeners();
+  calculateSimulasi();
+})();
+</script>
+</body></html>

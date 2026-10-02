@@ -1,0 +1,11 @@
+allowBuilds:
+  '@prisma/engines': true
+  argon2: true
+  # optional native speedup for msgpackr (BullMQ); JS fallback is fine
+  msgpackr-extract: false
+  prisma: true
+# Security: patched transitive versions (pnpm audit). Remove once upstream bumps.
+overrides:
+  mysql2: ^3.23.1
+  deepmerge-ts: ^8.0.0
+  uuid: ^11.1.1

@@ -1,0 +1,57 @@
+name: Deploy
+
+# Runs after CI passes on main: build + push images to GHCR, then ask Coolify
+# to redeploy. Setup (repo settings):
+#   secrets: COOLIFY_TOKEN, COOLIFY_WEBHOOK_BACKEND, COOLIFY_WEBHOOK_FRONTEND
+#   vars:    NEXT_PUBLIC_API_URL (public backend URL, baked into the frontend)
+on:
+  workflow_run:
+    workflows: [CI]
+    types: [completed]
+    branches: [main]
+
+concurrency:
+  group: deploy
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+  packages: write
+
+jobs:
+  deploy:
+    if: github.event.workflow_run.conclusion == 'success'
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        app: [backend, frontend]
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.workflow_run.head_sha }}
+      - uses: docker/setup-buildx-action@v3
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - id: image
+        run: echo "name=ghcr.io/${GITHUB_REPOSITORY,,}/${{ matrix.app }}" >> "$GITHUB_OUTPUT"
+      - uses: docker/build-push-action@v6
+        with:
+          context: ${{ matrix.app }}
+          file: docker/${{ matrix.app }}/Dockerfile
+          push: true
+          build-args: |
+            NEXT_PUBLIC_API_URL=${{ vars.NEXT_PUBLIC_API_URL }}
+          tags: |
+            ${{ steps.image.outputs.name }}:latest
+            ${{ steps.image.outputs.name }}:${{ github.event.workflow_run.head_sha }}
+          cache-from: type=gha,scope=${{ matrix.app }}
+          cache-to: type=gha,mode=max,scope=${{ matrix.app }}
+      - name: Trigger Coolify redeploy
+        env:
+          TOKEN: ${{ secrets.COOLIFY_TOKEN }}
+          WEBHOOK: ${{ matrix.app == 'backend' && secrets.COOLIFY_WEBHOOK_BACKEND || secrets.COOLIFY_WEBHOOK_FRONTEND }}
+        run: |
+          curl -fsS -H "Authorization: Bearer $TOKEN" "$WEBHOOK"

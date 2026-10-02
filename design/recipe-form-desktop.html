@@ -1,0 +1,628 @@
+<!DOCTYPE html><html lang="id"><head><meta charset="utf-8"><meta content="width=device-width, initial-scale=1.0" name="viewport"><meta content="web_dashboard" name="shell-type"><link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet"><link href="https://fonts.googleapis.com" rel="preconnect"><link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"><link href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible+Next:ital,wght@0,400;0,500;0,700;1,400&amp;family=Geist+Mono:wght@400;500;600;700&amp;family=Plus+Jakarta+Sans:wght@500;600;700;800&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"><style>@layer base{html,body{margin:0;padding:0;}body{overscroll-behavior:none;}main>:first-child{margin-top:0!important;}main>:last-child{margin-bottom:0!important;}}::-webkit-scrollbar{display:none;}</style><script src="https://cdn.tailwindcss.com"></script><script id="tailwind-config">tailwind.config = { darkMode: "class", theme: { extend: { "colors": { "on-tertiary": "#ffffff", "secondary-container": "#eae0b5", "on-surface": "#1a1c1b", "primary-fixed": "#9cf2e8", "surface-variant": "#e2e3e0", "on-secondary-container": "#6a6341", "surface-container-lowest": "#ffffff", "on-tertiary-fixed-variant": "#653e00", "on-tertiary-fixed": "#2a1700", "surface-container": "#eeeeeb", "on-primary-fixed": "#00201d", "error-container": "#ffdad6", "inverse-on-surface": "#f1f1ee", "primary-container": "#0f766e", "tertiary-fixed": "#ffddb8", "surface": "#f9f9f6", "inverse-primary": "#80d5cb", "on-primary-fixed-variant": "#00504a", "surface-tint": "#006a63", "on-secondary-fixed-variant": "#4d4727", "surface-container-highest": "#e2e3e0", "on-background": "#1a1c1b", "on-primary": "#ffffff", "surface-bright": "#f9f9f6", "on-primary-container": "#a3faef", "on-error": "#ffffff", "secondary-fixed": "#ede3b8", "primary": "#005c55", "background": "#f9f9f6", "secondary-fixed-dim": "#d1c79d", "secondary": "#665f3d", "outline-variant": "#bdc9c6", "on-secondary-fixed": "#201c02", "error": "#ba1a1a", "on-error-container": "#93000a", "inverse-surface": "#2f312f", "outline": "#6e7977", "on-surface-variant": "#3e4947", "tertiary-container": "#945d00", "primary-fixed-dim": "#80d5cb", "surface-container-low": "#f4f4f1", "tertiary-fixed-dim": "#ffb95f", "surface-container-high": "#e8e8e5", "on-tertiary-container": "#ffe6cc", "tertiary": "#734700", "on-secondary": "#ffffff", "surface-dim": "#dadad7" }, "borderRadius": { "DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "0.75rem", "full": "9999px" }, "spacing": { "space-xs": "0.25rem", "margin-desktop": "2rem", "margin": "1rem", "space-md": "0.75rem", "space-2xl": "2rem", "gutter-desktop": "1.5rem", "space-xl": "1.5rem", "space-sm": "0.5rem", "space-lg": "1rem", "gutter": "1rem" }, "fontFamily": { "display": [ "Plus Jakarta Sans" ], "money-md": [ "Geist Mono" ], "money-hero": [ "Geist Mono" ], "headline-sm": [ "Plus Jakarta Sans" ], "label-md": [ "Geist Mono" ], "headline-lg-mobile": [ "Plus Jakarta Sans" ], "body-sm": [ "Atkinson Hyperlegible Next" ], "body-lg": [ "Atkinson Hyperlegible Next" ], "headline-lg": [ "Plus Jakarta Sans" ], "money-hero-mobile": [ "Geist Mono" ], "headline-md": [ "Plus Jakarta Sans" ], "body-md": [ "Atkinson Hyperlegible Next" ], "money-sm": [ "Geist Mono" ] }, "fontSize": { "display": [ "36px", { "lineHeight": "40px", "letterSpacing": "-0.02em", "fontWeight": "800" } ], "money-md": [ "16px", { "lineHeight": "22px", "fontWeight": "600" } ], "money-hero": [ "32px", { "lineHeight": "36px", "letterSpacing": "-0.02em", "fontWeight": "700" } ], "headline-sm": [ "17px", { "lineHeight": "24px", "fontWeight": "600" } ], "label-md": [ "12px", { "lineHeight": "16px", "letterSpacing": "0.02em", "fontWeight": "600" } ], "headline-lg-mobile": [ "24px", { "lineHeight": "30px", "letterSpacing": "-0.015em", "fontWeight": "700" } ], "body-sm": [ "13px", { "lineHeight": "18px", "fontWeight": "400" } ], "body-lg": [ "16px", { "lineHeight": "24px", "fontWeight": "500" } ], "headline-lg": [ "28px", { "lineHeight": "34px", "letterSpacing": "-0.015em", "fontWeight": "700" } ], "money-hero-mobile": [ "26px", { "lineHeight": "32px", "letterSpacing": "-0.015em", "fontWeight": "700" } ], "headline-md": [ "20px", { "lineHeight": "26px", "fontWeight": "700" } ], "body-md": [ "15px", { "lineHeight": "22px", "fontWeight": "400" } ], "money-sm": [ "13px", { "lineHeight": "18px", "fontWeight": "600" } ] } } } }</script></head><body class="bg-background font-body-md text-on-surface antialiased"><aside class="fixed left-0 top-0 h-full w-[248px] bg-surface-container-lowest shadow-[0_1px_8px_rgba(0,0,0,0.04)] z-50 flex flex-col justify-between"><div class="flex flex-col"><div class="h-16 px-space-lg flex items-center gap-space-sm"><img alt="Brand logo. - Primary color: #0f766e - Font: plusJakartaSans - Mode: light - Roundness: rounded-md" class="h-8 w-auto object-contain" src="https://lh3.googleusercontent.com/aida/AEtjO1XE9hz--tHa8dio-D0col4vC2NqTOz7-fzzSvhD2A0H7tRwhrFXQ8Urrvei2HFdBeqBk_sBvP45ibwaV9GHpdQU6LjpwEUqoU9mpFMO7qAbDD6TyS0tsMQTi8BszfGLh1w3SmsqB1zGcK5trg-bjdVJoxQH0cgFP9IOFg9pMwyKre8sUYlM3YtPrOD0yVwE7Q-ym6CS-NPT1pvP-jo-Vu8H2ttJMNyL-bEwPW8b-YqNzYW2M0jrvTO-i3k"><div class="flex flex-col"><span class="font-headline-sm text-headline-sm text-primary leading-none">HPPKu</span><span class="font-label-md text-label-md text-on-surface-variant leading-tight">F&amp;B Cost Control</span></div></div><div class="px-space-md py-space-sm"><nav class="flex flex-col gap-space-xs" data-active-classes="bg-primary-container text-on-primary font-bold rounded-lg shadow-sm"><a class="flex items-center px-space-md py-space-sm rounded-lg text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-all font-headline-sm text-headline-sm" data-path="beranda" href="#"><span class="">Beranda</span></a><a class="flex items-center px-space-md py-space-sm rounded-lg text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-all font-headline-sm text-headline-sm" data-path="resep" href="#"><span class="">Resep</span></a><a class="flex items-center px-space-md py-space-sm rounded-lg text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-all font-headline-sm text-headline-sm" data-path="form-resep" href="#"><span class="">Form Resep</span></a><a class="flex items-center px-space-md py-space-sm rounded-lg text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-all font-headline-sm text-headline-sm" data-path="bahan-baku" href="#"><span class="">Bahan Baku</span></a><a class="flex items-center px-space-md py-space-sm rounded-lg text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-all font-headline-sm text-headline-sm" data-path="transaksi" href="#"><span class="">Transaksi</span></a><a class="flex items-center px-space-md py-space-sm rounded-lg text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-all font-headline-sm text-headline-sm" data-path="laporan" href="#"><span class="">Laporan</span></a><a class="flex items-center px-space-md py-space-sm rounded-lg text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-all font-headline-sm text-headline-sm" data-path="pengaturan" href="#"><span class="">Pengaturan</span></a></nav></div></div><div class="p-space-md flex flex-col gap-space-md"><div class="bg-surface-container-low rounded-xl p-space-md flex flex-col gap-space-xs"><div class="flex items-center justify-between"><span class="font-label-md text-label-md text-on-surface-variant">OCR Quota</span><span class="font-money-sm text-money-sm text-primary">7 / 10 Scan</span></div><div class="w-full h-1.5 bg-surface-container-highest rounded-full overflow-hidden"><div class="bg-primary h-full rounded-full" style="width: 70%;"></div></div><span class="font-body-sm text-body-sm text-on-surface-variant">Sisa 3 scan struk bulan ini</span></div><div class="flex items-center gap-space-sm p-space-xs rounded-xl bg-surface-container-lowest"><div class="w-9 h-9 rounded-full bg-secondary-container text-on-secondary-container flex items-center justify-center font-headline-sm text-headline-sm shrink-0">BS</div><div class="flex flex-col min-w-0 flex-1"><span class="font-headline-sm text-headline-sm text-on-surface truncate">Budi Santoso</span><span class="font-body-sm text-body-sm text-on-surface-variant truncate">Kedai Kopi Ruang Tenang</span></div></div></div></aside><div class="pl-[248px]"><header class="fixed top-0 left-[248px] right-0 h-16 bg-surface/85 backdrop-blur-xl shadow-[0_1px_8px_rgba(0,0,0,0.04)] z-40 flex items-center justify-between px-space-xl"><div class="flex items-center gap-space-lg flex-1 max-w-xl"><div class="flex items-center gap-space-xs px-space-md py-space-xs bg-surface-container-low rounded-lg shrink-0"><span class="material-symbols-outlined text-primary text-[20px]">storefront</span><span class="font-headline-sm text-headline-sm text-on-surface font-semibold">Kedai Kopi Ruang Tenang</span><span class="text-outline text-body-sm">·</span><span class="font-label-md text-label-md text-on-surface-variant tracking-wider uppercase">CABANG TEBET</span><span class="material-symbols-outlined text-on-surface-variant text-[18px]">expand_more</span></div><div class="relative flex-1 hidden md:flex items-center"><span class="material-symbols-outlined absolute left-space-md text-on-surface-variant text-[20px] pointer-events-none">search</span><input class="w-full h-10 pl-10 pr-space-md bg-surface-container-low border-0 rounded-lg font-body-sm text-body-sm text-on-surface placeholder:text-on-surface-variant focus:outline-none focus:ring-1 focus:ring-primary" placeholder="Cari resep, bahan, atau transaksi..." type="text"></div></div><div class="flex items-center gap-space-lg"><button aria-label="Notifications" class="relative p-space-xs text-on-surface-variant hover:text-on-surface transition-colors flex items-center justify-center rounded-lg hover:bg-surface-container" type="button"><span class="material-symbols-outlined text-[22px]">notifications</span><span class="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-error ring-2 ring-surface"></span></button><div class="h-6 w-px bg-surface-container-high"></div><div class="flex items-center gap-space-sm cursor-pointer"><div class="w-8 h-8 rounded-full bg-primary flex items-center justify-center"><span class="material-symbols-outlined text-on-primary text-[18px]">person</span></div><div class="flex flex-col text-left"><span class="font-headline-sm text-headline-sm text-on-surface leading-tight">Budi S.</span><span class="font-label-md text-label-md text-on-surface-variant uppercase">Owner</span></div></div></div></header><main class="relative pt-16 bg-background min-h-screen px-space-xl py-space-lg"><div class="flex flex-col w-full pb-16">
+<!-- Top Navigation & Breadcrumbs -->
+<div class="flex flex-col md:flex-row md:items-center justify-between gap-space-md mb-space-lg">
+<div class="flex flex-col gap-space-xs">
+<div class="flex items-center gap-space-xs">
+<a class="inline-flex items-center gap-1 text-on-surface-variant hover:text-primary transition-colors font-headline-sm text-label-md" href="#">
+<span class="material-symbols-outlined text-[16px]">arrow_back</span>
+<span class="">Resep</span>
+</a>
+<span class="text-outline-variant font-label-md text-label-md">/</span>
+<span class="text-on-surface-variant font-label-md text-label-md">Kalkulator HPP Live</span>
+</div>
+<!-- Editable Recipe Title & Attributes -->
+<div class="flex flex-wrap items-center gap-space-md mt-space-xs">
+<div class="relative group">
+<input aria-label="Nama Resep" class="font-headline-lg text-headline-lg text-on-surface bg-transparent border-b-2 border-dashed border-outline-variant hover:border-primary focus:border-primary focus:outline-none py-0.5 px-1 font-extrabold max-w-sm sm:max-w-md transition-colors" id="recipeNameInput" type="text" value="Es Kopi Susu Aren">
+<span class="material-symbols-outlined absolute right-1 top-2 text-[18px] text-outline-variant group-hover:text-primary pointer-events-none transition-colors">edit</span>
+</div>
+<div class="flex items-center gap-space-sm">
+<!-- Category Select Pill -->
+<div class="relative inline-flex items-center bg-secondary-container text-on-secondary-container px-space-md py-1 rounded-full font-headline-sm text-label-md font-semibold">
+<span class="material-symbols-outlined text-[15px] mr-1">local_cafe</span>
+<select aria-label="Kategori Resep" class="bg-transparent text-on-secondary-container font-headline-sm text-label-md font-bold focus:outline-none cursor-pointer pr-3 appearance-none">
+<option selected="" value="minuman">Minuman Dingin</option>
+<option value="makanan">Makanan Utama</option>
+<option value="snack">Cemilan &amp; Pastry</option>
+<option value="sirup">Bahan Olahan Sendiri</option>
+</select>
+<span class="material-symbols-outlined text-[16px] pointer-events-none ml-[-6px]">arrow_drop_down</span>
+</div>
+<!-- Dynamic Margin Status Badge -->
+<div class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-100 text-emerald-800 font-headline-sm text-label-md font-bold transition-all" id="headerMarginBadge"><span class="w-2 h-2 rounded-full bg-emerald-600 animate-pulse"></span><span class="">Margin Sehat (51%)</span></div>
+</div>
+</div>
+</div>
+<!-- Header Action CTAs -->
+<div class="flex items-center gap-space-sm self-start md:self-auto shrink-0">
+<button class="h-11 px-space-lg rounded-xl bg-surface-container-high text-on-surface hover:bg-surface-variant font-headline-sm text-headline-sm font-semibold transition-all flex items-center gap-1.5 active:scale-95" id="btnResetForm" type="button">
+<span class="material-symbols-outlined text-[18px]">restart_alt</span>
+<span class="">Batal / Reset</span>
+</button>
+<button class="h-11 px-6 rounded-xl bg-primary text-on-primary hover:bg-primary-container font-headline-sm text-headline-sm font-semibold transition-all shadow-sm flex items-center gap-2 active:scale-95" id="btnSaveRecipe" type="button">
+<span class="material-symbols-outlined text-[20px]">check_circle</span>
+<span class="">Simpan Resep</span>
+</button>
+</div>
+</div>
+<!-- Main Grid: 60% Left, 40% Right -->
+<div class="grid grid-cols-1 lg:grid-cols-12 gap-space-xl">
+<!-- LEFT COLUMN: HPP Breakdown (12 cols on mobile, 7 cols on lg) -->
+<div class="lg:col-span-7 flex flex-col gap-space-lg">
+<div class="bg-surface-container-lowest rounded-xl p-6 shadow-sm border border-outline-variant/30 flex flex-col">
+<!-- Ingredients Header -->
+<div class="flex items-center justify-between pb-4 border-b border-surface-container-highest">
+<div>
+<h2 class="font-headline-md text-headline-md text-on-surface">Daftar Bahan Baku</h2>
+<p class="font-body-sm text-body-sm text-on-surface-variant">Kalkulasi modal per porsi berdasarkan takaran presisi.</p>
+</div>
+<button class="h-9 px-3.5 rounded-lg border-2 border-dashed border-primary text-primary hover:bg-primary-fixed/30 font-headline-sm text-label-md font-bold transition-all flex items-center gap-1.5" id="btnAddIngredient" type="button">
+<span class="material-symbols-outlined text-[16px]">add</span>
+<span class="">Tambah Bahan</span>
+</button>
+</div>
+<!-- Ingredients Table Rows -->
+<div class="flex flex-col divide-y divide-surface-container-high py-2" id="ingredientList">
+<!-- Row 1: Espresso -->
+<div class="ingredient-row py-3.5 flex flex-col sm:flex-row sm:items-center justify-between gap-3 group" data-cost-unit="177.78">
+<div class="flex-1 min-w-0">
+<div class="flex items-center gap-2">
+<span class="font-headline-sm text-body-lg text-on-surface font-semibold truncate">Kopi Espresso</span>
+<span class="px-2 py-0.5 rounded bg-surface-container text-on-surface-variant font-label-md text-label-md">Bahan Kering</span>
+</div>
+<div class="font-label-md text-label-md text-on-surface-variant mt-0.5">
+                Acuan: Rp 160.000 / kg · <span class="text-primary font-semibold">Master Sync</span>
+</div>
+</div>
+<div class="flex items-center gap-4 justify-between sm:justify-end">
+<!-- Takaran Input -->
+<div class="flex items-center bg-surface-container-low rounded-lg p-1 border border-outline-variant/40 focus-within:border-primary">
+<input aria-label="Takaran Kopi Espresso" class="ingredient-qty w-14 bg-transparent text-right font-money-md text-money-md text-on-surface focus:outline-none px-1" min="0" step="1" type="number" value="18">
+<span class="font-label-md text-label-md text-on-surface-variant font-medium px-2">g</span>
+</div>
+<!-- Cost Subtotal -->
+<div class="text-right min-w-[100px]">
+<div class="ingredient-subtotal font-money-md text-money-md font-bold text-on-surface tabular-nums">Rp 3.200</div>
+<div class="font-label-md text-[11px] text-primary flex items-center justify-end gap-0.5">
+<span class="material-symbols-outlined text-[12px]">sync</span> otomatis
+                </div>
+</div>
+<button class="btn-remove-row p-1 text-on-surface-variant/50 hover:text-error transition-colors rounded hover:bg-error-container/30" title="Hapus bahan" type="button">
+<span class="material-symbols-outlined text-[20px]">delete</span>
+</button>
+</div>
+</div>
+<!-- Row 2: Susu UHT -->
+<div class="ingredient-row py-3.5 flex flex-col sm:flex-row sm:items-center justify-between gap-3 group" data-cost-unit="15">
+<div class="flex-1 min-w-0">
+<div class="flex items-center gap-2">
+<span class="font-headline-sm text-body-lg text-on-surface font-semibold truncate">Susu UHT Full Cream</span>
+<span class="px-2 py-0.5 rounded bg-surface-container text-on-surface-variant font-label-md text-label-md">Dairy</span>
+</div>
+<div class="font-label-md text-label-md text-on-surface-variant mt-0.5">
+                Acuan: Rp 18.500 / 1.000 ml
+              </div>
+</div>
+<div class="flex items-center gap-4 justify-between sm:justify-end">
+<div class="flex items-center bg-surface-container-low rounded-lg p-1 border border-outline-variant/40 focus-within:border-primary">
+<input aria-label="Takaran Susu UHT Full Cream" class="ingredient-qty w-14 bg-transparent text-right font-money-md text-money-md text-on-surface focus:outline-none px-1" min="0" step="5" type="number" value="120">
+<span class="font-label-md text-label-md text-on-surface-variant font-medium px-2">ml</span>
+</div>
+<div class="text-right min-w-[100px]">
+<div class="ingredient-subtotal font-money-md text-money-md font-bold text-on-surface tabular-nums">Rp 1.800</div>
+<div class="font-label-md text-[11px] text-primary flex items-center justify-end gap-0.5">
+<span class="material-symbols-outlined text-[12px]">sync</span> otomatis
+                </div>
+</div>
+<button class="btn-remove-row p-1 text-on-surface-variant/50 hover:text-error transition-colors rounded hover:bg-error-container/30" title="Hapus bahan" type="button">
+<span class="material-symbols-outlined text-[20px]">delete</span>
+</button>
+</div>
+</div>
+<!-- Row 3: Gula Aren -->
+<div class="ingredient-row py-3.5 flex flex-col sm:flex-row sm:items-center justify-between gap-3 group" data-cost-unit="63.33">
+<div class="flex-1 min-w-0">
+<div class="flex items-center gap-2">
+<span class="font-headline-sm text-body-lg text-on-surface font-semibold truncate">Gula Aren Organik Liquid</span>
+<span class="px-2 py-0.5 rounded bg-surface-container text-on-surface-variant font-label-md text-label-md">Pemanis</span>
+</div>
+<div class="font-label-md text-label-md text-on-surface-variant mt-0.5">
+                Acuan: Rp 38.000 / 600 ml
+              </div>
+</div>
+<div class="flex items-center gap-4 justify-between sm:justify-end">
+<div class="flex items-center bg-surface-container-low rounded-lg p-1 border border-outline-variant/40 focus-within:border-primary">
+<input aria-label="Takaran Gula Aren Organik Liquid" class="ingredient-qty w-14 bg-transparent text-right font-money-md text-money-md text-on-surface focus:outline-none px-1" min="0" step="1" type="number" value="15">
+<span class="font-label-md text-label-md text-on-surface-variant font-medium px-2">ml</span>
+</div>
+<div class="text-right min-w-[100px]">
+<div class="ingredient-subtotal font-money-md text-money-md font-bold text-on-surface tabular-nums">Rp 950</div>
+<div class="font-label-md text-[11px] text-primary flex items-center justify-end gap-0.5">
+<span class="material-symbols-outlined text-[12px]">sync</span> otomatis
+                </div>
+</div>
+<button class="btn-remove-row p-1 text-on-surface-variant/50 hover:text-error transition-colors rounded hover:bg-error-container/30" title="Hapus bahan" type="button">
+<span class="material-symbols-outlined text-[20px]">delete</span>
+</button>
+</div>
+</div>
+<!-- Row 4: Cup & Lid -->
+<div class="ingredient-row py-3.5 flex flex-col sm:flex-row sm:items-center justify-between gap-3 group" data-cost-unit="2100">
+<div class="flex-1 min-w-0">
+<div class="flex items-center gap-2">
+<span class="font-headline-sm text-body-lg text-on-surface font-semibold truncate">Cup Dingin 14oz + Seal / Lid</span>
+<span class="px-2 py-0.5 rounded bg-surface-container text-on-surface-variant font-label-md text-label-md">Kemasan</span>
+</div>
+<div class="font-label-md text-label-md text-on-surface-variant mt-0.5">
+                Acuan: Rp 2.100 / set (Cup + Lid + Paper Straw)
+              </div>
+</div>
+<div class="flex items-center gap-4 justify-between sm:justify-end">
+<div class="flex items-center bg-surface-container-low rounded-lg p-1 border border-outline-variant/40 focus-within:border-primary">
+<input aria-label="Takaran Cup Dingin" class="ingredient-qty w-14 bg-transparent text-right font-money-md text-money-md text-on-surface focus:outline-none px-1" min="0" step="1" type="number" value="1">
+<span class="font-label-md text-label-md text-on-surface-variant font-medium px-2">set</span>
+</div>
+<div class="text-right min-w-[100px]">
+<div class="ingredient-subtotal font-money-md text-money-md font-bold text-on-surface tabular-nums">Rp 2.100</div>
+<div class="font-label-md text-[11px] text-primary flex items-center justify-end gap-0.5">
+<span class="material-symbols-outlined text-[12px]">sync</span> otomatis
+                </div>
+</div>
+<button class="btn-remove-row p-1 text-on-surface-variant/50 hover:text-error transition-colors rounded hover:bg-error-container/30" title="Hapus bahan" type="button">
+<span class="material-symbols-outlined text-[20px]">delete</span>
+</button>
+</div>
+</div>
+<!-- Row 5: Es Batu Kristal -->
+<div class="ingredient-row py-3.5 flex flex-col sm:flex-row sm:items-center justify-between gap-3 group" data-cost-unit="2">
+<div class="flex-1 min-w-0">
+<div class="flex items-center gap-2">
+<span class="font-headline-sm text-body-lg text-on-surface font-semibold truncate">Es Batu Kristal Tube</span>
+<span class="px-2 py-0.5 rounded bg-surface-container text-on-surface-variant font-label-md text-label-md">Operasional</span>
+</div>
+<div class="font-label-md text-label-md text-on-surface-variant mt-0.5">
+                Acuan: Rp 20.000 / 10 kg
+              </div>
+</div>
+<div class="flex items-center gap-4 justify-between sm:justify-end">
+<div class="flex items-center bg-surface-container-low rounded-lg p-1 border border-outline-variant/40 focus-within:border-primary">
+<input aria-label="Takaran Es Batu Kristal" class="ingredient-qty w-14 bg-transparent text-right font-money-md text-money-md text-on-surface focus:outline-none px-1" min="0" step="10" type="number" value="100">
+<span class="font-label-md text-label-md text-on-surface-variant font-medium px-2">g</span>
+</div>
+<div class="text-right min-w-[100px]">
+<div class="ingredient-subtotal font-money-md text-money-md font-bold text-on-surface tabular-nums">Rp 200</div>
+<div class="font-label-md text-[11px] text-primary flex items-center justify-end gap-0.5">
+<span class="material-symbols-outlined text-[12px]">sync</span> otomatis
+                </div>
+</div>
+<button class="btn-remove-row p-1 text-on-surface-variant/50 hover:text-error transition-colors rounded hover:bg-error-container/30" title="Hapus bahan" type="button">
+<span class="material-symbols-outlined text-[20px]">delete</span>
+</button>
+</div>
+</div>
+</div>
+<!-- Overhead / Indirect Cost Allocation -->
+<div class="mt-4 pt-4 border-t border-surface-container-high bg-surface-container-low/60 -mx-6 px-6 py-4 rounded-b-xl flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+<div class="flex flex-col">
+<span class="font-headline-sm text-body-md text-on-surface font-semibold flex items-center gap-1.5">
+<span class="material-symbols-outlined text-tertiary text-[18px]">bolt</span>
+              Biaya Overhead &amp; Operasional Porsi
+            </span>
+<span class="font-body-sm text-body-sm text-on-surface-variant">Listrik espresso machine, plastik kresek takeaway, &amp; tissue</span>
+</div>
+<div class="flex items-center gap-2 self-end sm:self-auto">
+<span class="font-label-md text-label-md text-on-surface-variant">Rp</span>
+<input aria-label="Biaya Overhead" class="h-11 w-32 px-3 rounded-lg bg-surface-container-lowest border border-outline-variant/60 font-money-md text-money-md text-right font-bold text-on-surface focus:outline-none focus:border-primary" id="inputOverhead" step="50" type="number" value="500">
+</div>
+</div>
+<!-- Grand Total HPP Baris Utama -->
+<div class="mt-6 pt-5 border-t-2 border-surface-container-highest flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+<div>
+<span class="font-headline-sm text-headline-sm font-bold text-on-surface">Total HPP per Porsi</span>
+<p class="font-body-sm text-body-sm text-on-surface-variant mt-0.5">
+              Dihitung otomatis dari <span class="font-semibold text-primary" id="ingredientCount">5</span> bahan baku + overhead. Terhubung ke Master.
+            </p>
+</div>
+<div class="text-right">
+<div class="font-money-hero text-money-hero text-primary font-bold tabular-nums" id="displayTotalHPP">Rp 8.750</div>
+<span class="font-label-md text-label-md text-secondary font-semibold">COGS Rasio Seimbang</span>
+</div>
+</div>
+</div>
+<!-- Quick Tips Box for F&B Founders -->
+<div class="bg-secondary-container/40 border border-secondary-container rounded-xl p-4 flex items-start gap-3">
+<span class="material-symbols-outlined text-secondary text-[22px] shrink-0 mt-0.5">lightbulb</span>
+<div class="font-body-sm text-body-sm text-on-surface">
+<strong class="font-bold text-on-secondary-container">Aturan Emas Menu Kopi:</strong> Untuk menjaga kestabilan cashflow kedai independen, pertahankan HPP di rentang <span class="font-semibold underline">30% - 40%</span> dari harga jual menu dine-in, dan maksimal <span class="font-semibold underline">45%</span> jika ada potongan komisi aplikasi online.
+        </div>
+</div>
+</div>
+<!-- RIGHT COLUMN: Pricing Simulation & Margins (Sticky on Desktop) -->
+<div class="lg:col-span-5 flex flex-col gap-space-lg">
+<div class="bg-surface-container-lowest rounded-xl p-6 shadow-sm border border-outline-variant/30 sticky top-20 flex flex-col gap-5">
+<div class="flex items-center justify-between border-b border-surface-container-high pb-4">
+<h2 class="font-headline-md text-headline-md text-on-surface">Harga Jual &amp; Simulasi Margin</h2>
+<span class="material-symbols-outlined text-primary text-[20px]">calculate</span>
+</div>
+<!-- HPP Acuan Box -->
+<div class="bg-surface-container-low p-3.5 rounded-lg flex justify-between items-center">
+<div class="flex flex-col">
+<span class="font-label-md text-label-md text-on-surface-variant uppercase tracking-wider">Modal Dasar HPP</span>
+<span class="font-body-sm text-body-sm text-on-surface-variant">Biaya riil produksi</span>
+</div>
+<span class="font-money-md text-money-md font-bold text-on-surface tabular-nums" id="cardHPPValue">Rp 8.750</span>
+</div>
+<!-- Interactive Margin Slider Section -->
+<div class="flex flex-col gap-2">
+<div class="flex justify-between items-baseline">
+<label class="font-headline-sm text-body-lg text-on-surface font-semibold" for="marginSlider">Target Margin Keuntungan</label>
+<div class="flex items-baseline gap-1">
+<span class="font-money-hero text-money-hero text-primary font-bold" id="sliderValueDisplay">51</span>
+<span class="font-headline-md text-headline-md text-primary font-bold">%</span>
+</div>
+</div>
+<!-- Range slider -->
+<div class="relative py-2">
+<input aria-label="Target Margin Keuntungan" class="w-full h-2.5 bg-surface-container-high rounded-lg appearance-none cursor-pointer accent-primary" id="marginSlider" max="80" min="10" type="range" value="51">
+<!-- Visual Tick Marks -->
+<div class="flex justify-between text-on-surface-variant font-label-md text-[11px] px-1 mt-1 font-mono">
+<span class="">10%</span>
+<span class="text-error font-semibold">30% (Kritis)</span>
+<span class="text-primary font-semibold">50% (Ideal)</span>
+<span class="">70%</span>
+<span class="">80%</span>
+</div>
+</div>
+<div class="flex items-center justify-between bg-primary-fixed/30 p-2.5 rounded-lg">
+<span class="font-label-md text-label-md text-on-primary-fixed-variant">Laba kotor per porsi:</span>
+<span class="font-money-md text-money-md font-bold text-primary tabular-nums" id="grossProfitDisplay">Rp 9.250</span>
+</div>
+</div>
+<!-- AI Pricing Recommendation Card -->
+<div class="flex flex-col gap-2 pt-2">
+<button class="w-full py-2.5 px-4 rounded-xl bg-amber-400 hover:bg-amber-500 text-stone-900 font-headline-sm text-body-sm font-bold flex items-center justify-center gap-2 transition-all shadow-sm active:scale-98" id="btnAiPricing" type="button">
+<span class="material-symbols-outlined text-[18px]">query_stats</span>
+<span class="">Minta Saran Harga AI Radar Pasar</span>
+</button>
+<div class="bg-secondary-container/50 border border-amber-300/60 rounded-xl p-3.5 flex flex-col gap-2">
+<div class="flex items-start gap-2.5">
+<div class="w-6 h-6 rounded-full bg-amber-400 text-stone-900 flex items-center justify-center shrink-0 mt-0.5">
+<span class="material-symbols-outlined text-[14px]">auto_awesome</span>
+</div>
+<div class="font-body-sm text-body-sm text-on-surface leading-snug">
+                Kompetitor radius 2km (Tebet) menjual menu serupa di kisaran <strong class="font-bold">Rp 17.000 – Rp 20.000</strong>. Rekomendasi harga <strong class="font-bold text-primary">Rp 18.000</strong> sangat optimal dengan margin 51%.
+              </div>
+</div>
+<div class="flex justify-end pt-1">
+<button class="font-headline-sm text-label-md font-bold text-primary hover:text-primary-container underline flex items-center gap-1 cursor-pointer" id="btnApplyAiPrice" type="button">
+<span class="material-symbols-outlined text-[15px]">check</span>
+<span class="">Terapkan Rp 18.000</span>
+</button>
+</div>
+</div>
+</div>
+<!-- Rekomendasi vs Override Harga Aktual -->
+<div class="flex flex-col gap-3 pt-2 border-t border-surface-container-high">
+<div class="flex items-center justify-between">
+<div>
+<span class="font-label-md text-label-md uppercase tracking-wider text-on-surface-variant font-semibold">Rekomendasi Pembulatan</span>
+<div class="font-money-hero text-money-hero text-on-surface font-extrabold tabular-nums" id="roundedRecPrice">Rp 18.000</div>
+</div>
+<span class="px-2.5 py-1 rounded bg-surface-container font-label-md text-label-md text-on-surface-variant">Kelipatan Rp 500</span>
+</div>
+<div class="flex flex-col gap-1.5 mt-2">
+<label class="font-headline-sm text-body-md text-on-surface font-semibold flex items-center justify-between" for="inputActualPrice">
+<span class="">Harga Jual Aktual (Di Menu / Kasir POS)</span>
+<span class="text-xs text-primary font-normal">Edit manual</span>
+</label>
+<div class="relative flex items-center">
+<span class="absolute left-3.5 font-money-md text-money-md font-bold text-on-surface-variant">Rp</span>
+<input class="w-full h-11 pl-11 pr-4 bg-surface-container-lowest border border-outline-variant/60 rounded-xl font-money-md text-body-lg font-bold text-on-surface focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary tabular-nums" id="inputActualPrice" step="500" type="number" value="18000">
+</div>
+<span class="font-body-sm text-[12px] text-on-surface-variant">Harga inilah yang tersinkronisasi ke cetak struk kasir.</span>
+</div>
+</div>
+<!-- Margin Health Spectrum Bar -->
+<div class="flex flex-col gap-2 pt-2">
+<div class="flex justify-between items-center text-xs font-semibold">
+<span class="font-headline-sm text-label-md text-on-surface">Indikator Kesehatan Margin</span>
+<span class="font-label-md text-label-md font-bold text-emerald-700" id="healthLabelText">51% (Sangat Sehat)</span>
+</div>
+<!-- Color spectrum segments -->
+<div class="relative w-full h-3 bg-surface-container-highest rounded-full overflow-hidden flex">
+<div class="h-full bg-red-400" style="width: 25%;" title="Rendah (&lt;25%)"></div>
+<div class="h-full bg-amber-400" style="width: 25%;" title="Sedang (25-40%)"></div>
+<div class="h-full bg-emerald-500" style="width: 50%;" title="Sehat (&gt;40%)"></div>
+</div>
+<div class="flex justify-between font-label-md text-[10px] text-on-surface-variant uppercase tracking-wider">
+<span class="">Rugi / Kritis</span>
+<span class="text-center">Standar</span>
+<span class="text-right">Sehat &amp; Tangguh</span>
+</div>
+</div>
+</div>
+</div>
+</div>
+<!-- BOTTOM SECTION: 30-Day Cost Fluctuation & Supply Alert -->
+<div class="mt-space-xl bg-surface-container-lowest rounded-xl p-6 shadow-sm border border-outline-variant/30 flex flex-col gap-4">
+<div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+<div class="flex items-center gap-2.5">
+<div class="w-8 h-8 rounded-lg bg-surface-container-high flex items-center justify-center text-on-surface">
+<span class="material-symbols-outlined text-[20px]">trending_up</span>
+</div>
+<div>
+<h3 class="font-headline-sm text-headline-sm font-bold text-on-surface">Tren Fluktuasi HPP 30 Hari Terakhir</h3>
+<p class="font-body-sm text-body-sm text-on-surface-variant">Riwayat dinamika biaya bahan baku menu Es Kopi Susu Aren</p>
+</div>
+</div>
+<div class="flex items-center gap-3">
+<span class="px-2.5 py-1 rounded-full bg-error-container text-on-error-container font-label-md text-label-md font-bold flex items-center gap-1">
+<span class="material-symbols-outlined text-[14px]">arrow_upward</span> Naik +8.0% bln ini
+        </span>
+<span class="font-money-sm text-money-sm text-on-surface-variant">Rata-rata: <strong>Rp 8.350</strong></span>
+</div>
+</div>
+<!-- Data Visualization: Fluctuation Chart (Responsive SVG Sparkline) -->
+<div class="w-full bg-surface-container-low/70 rounded-xl p-4 flex flex-col gap-2">
+<div class="h-32 w-full">
+<svg class="w-full h-full overflow-visible" preserveAspectRatio="none" viewBox="0 0 800 130">
+<defs>
+<linearGradient id="hppTrendGradient" x1="0" x2="0" y1="0" y2="1">
+<stop offset="0%" stop-color="#0F766E" stop-opacity="0.25"></stop>
+<stop offset="100%" stop-color="#0F766E" stop-opacity="0.0"></stop>
+</linearGradient>
+</defs>
+<!-- Grid horizontal lines -->
+<line class="text-surface-container-highest" stroke="currentColor" stroke-dasharray="4,4" x1="0" x2="800" y1="20" y2="20"></line>
+<line class="text-surface-container-highest" stroke="currentColor" stroke-dasharray="4,4" x1="0" x2="800" y1="65" y2="65"></line>
+<line class="text-surface-container-highest" stroke="currentColor" stroke-dasharray="4,4" x1="0" x2="800" y1="110" y2="110"></line>
+<!-- Gradient Area Fill -->
+<polygon fill="url(#hppTrendGradient)" points="20,110 20,95 240,82 480,75 760,25 760,110"></polygon>
+<!-- Trend Polyline -->
+<polyline fill="none" points="20,95 240,82 480,75 760,25" stroke="#0F766E" stroke-linecap="round" stroke-linejoin="round" stroke-width="3"></polyline>
+<!-- Data Points with Badges -->
+<!-- Point 1: 4 Minggu Lalu -->
+<circle cx="20" cy="95" fill="#FFFFFF" r="5" stroke="#0F766E" stroke-width="2.5"></circle>
+<text fill="#6E7977" font-family="Geist Mono" font-size="10" text-anchor="start" x="20" y="125">4 Mgg Lalu (Rp 8.100)</text>
+<!-- Point 2: 3 Minggu Lalu -->
+<circle cx="240" cy="82" fill="#FFFFFF" r="5" stroke="#0F766E" stroke-width="2.5"></circle>
+<text fill="#6E7977" font-family="Geist Mono" font-size="10" text-anchor="middle" x="240" y="125">3 Mgg Lalu (Rp 8.250)</text>
+<!-- Point 3: 2 Minggu Lalu -->
+<circle cx="480" cy="75" fill="#FFFFFF" r="5" stroke="#0F766E" stroke-width="2.5"></circle>
+<text fill="#6E7977" font-family="Geist Mono" font-size="10" text-anchor="middle" x="480" y="125">2 Mgg Lalu (Rp 8.350)</text>
+<!-- Point 4: Hari ini -->
+<circle cx="760" cy="25" fill="#0F766E" r="6" stroke="#FFFFFF" stroke-width="2"></circle>
+<text fill="#005C55" font-family="Geist Mono" font-size="11" font-weight="700" text-anchor="end" x="760" y="18">Hari Ini: Rp 8.750</text>
+</svg>
+</div>
+<!-- Ingredient Spike Insight Alert -->
+<div class="mt-3 flex items-start gap-2.5 p-3 rounded-lg bg-surface-container-lowest border border-outline-variant/50">
+<span class="material-symbols-outlined text-tertiary-container text-[20px] shrink-0">info</span>
+<div class="font-body-sm text-body-sm text-on-surface">
+<strong class="font-bold text-on-surface">Deteksi Penyebab Kenaikan:</strong> HPP naik <span class="font-semibold text-error">Rp 650/porsi</span> dalam 2 pekan terakhir akibat lonjakan harga pasokan <strong class="font-semibold text-primary">Kopi Espresso (+8%)</strong> dari supplier Subang. Disarankan mempertimbangkan opsi blending beans atau mempertahankan margin dengan menaikkan harga jual aktual ke <strong class="font-semibold">Rp 19.000</strong>.
+        </div>
+</div>
+</div>
+</div>
+</div>
+<!-- Live Interactive Script for HPP & Margin Calculator -->
+<script>
+  (function initHPPCalculator() {
+    const listContainer = document.getElementById('ingredientList');
+    const inputOverhead = document.getElementById('inputOverhead');
+    const displayTotalHPP = document.getElementById('displayTotalHPP');
+    const cardHPPValue = document.getElementById('cardHPPValue');
+    const ingredientCount = document.getElementById('ingredientCount');
+    const marginSlider = document.getElementById('marginSlider');
+    const sliderValueDisplay = document.getElementById('sliderValueDisplay');
+    const grossProfitDisplay = document.getElementById('grossProfitDisplay');
+    const roundedRecPrice = document.getElementById('roundedRecPrice');
+    const inputActualPrice = document.getElementById('inputActualPrice');
+    const headerMarginBadge = document.getElementById('headerMarginBadge');
+    const healthLabelText = document.getElementById('healthLabelText');
+    const btnAiPricing = document.getElementById('btnAiPricing');
+    const btnApplyAiPrice = document.getElementById('btnApplyAiPrice');
+    const btnResetForm = document.getElementById('btnResetForm');
+    const btnSaveRecipe = document.getElementById('btnSaveRecipe');
+    const btnAddIngredient = document.getElementById('btnAddIngredient');
+
+    // Helper: format Indonesian Rupiah with dots
+    function formatRupiah(number) {
+      const rounded = Math.round(number);
+      return 'Rp ' + rounded.toString().replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+    }
+
+    // Recalculate HPP from all ingredient rows and overhead
+    function calculateHPP() {
+      const rows = listContainer.querySelectorAll('.ingredient-row');
+      let ingredientsSum = 0;
+      let activeCount = 0;
+
+      rows.forEach(row => {
+        const qtyInput = row.querySelector('.ingredient-qty');
+        const costUnit = parseFloat(row.dataset.costUnit) || 0;
+        const qty = parseFloat(qtyInput ? qtyInput.value : 0) || 0;
+        const subtotal = qty * costUnit;
+        
+        ingredientsSum += subtotal;
+        activeCount++;
+
+        const subtotalEl = row.querySelector('.ingredient-subtotal');
+        if (subtotalEl) {
+          subtotalEl.textContent = formatRupiah(subtotal);
+        }
+      });
+
+      const overhead = parseFloat(inputOverhead.value) || 0;
+      const totalHPP = ingredientsSum + overhead;
+
+      if (ingredientCount) ingredientCount.textContent = activeCount;
+      if (displayTotalHPP) displayTotalHPP.textContent = formatRupiah(totalHPP);
+      if (cardHPPValue) cardHPPValue.textContent = formatRupiah(totalHPP);
+
+      updatePricing(totalHPP);
+      return totalHPP;
+    }
+
+    // Recalculate margins and recommended price
+    function updatePricing(currentHPP) {
+      const marginPct = parseFloat(marginSlider.value) || 50;
+      sliderValueDisplay.textContent = Math.round(marginPct);
+
+      // Formula: Selling Price = HPP / (1 - Margin/100)
+      let calculatedPrice = currentHPP;
+      if (marginPct < 100) {
+        calculatedPrice = currentHPP / (1 - (marginPct / 100));
+      }
+
+      // Round to nearest 500 for practical F&B cash/QRIS operations
+      const roundedPrice = Math.round(calculatedPrice / 500) * 500;
+      const grossProfit = roundedPrice - currentHPP;
+
+      if (grossProfitDisplay) grossProfitDisplay.textContent = formatRupiah(grossProfit);
+      if (roundedRecPrice) roundedRecPrice.textContent = formatRupiah(roundedPrice);
+
+      // Evaluate Actual Price Margin
+      const actualPrice = parseFloat(inputActualPrice.value) || roundedPrice;
+      const actualMargin = actualPrice > 0 ? Math.round(((actualPrice - currentHPP) / actualPrice) * 100) : 0;
+
+      // Update Health Label & Badges
+      if (actualMargin >= 45) {
+        healthLabelText.textContent = actualMargin + '% (Sangat Sehat)';
+        healthLabelText.className = 'font-label-md text-label-md font-bold text-emerald-700';
+        headerMarginBadge.className = 'inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-100 text-emerald-800 font-headline-sm text-label-md font-bold transition-all';
+        headerMarginBadge.innerHTML = '<span class="w-2 h-2 rounded-full bg-emerald-600 animate-pulse"></span><span>Margin Sehat (' + actualMargin + '%)</span>';
+      } else if (actualMargin >= 25) {
+        healthLabelText.textContent = actualMargin + '% (Cukup/Waspada)';
+        healthLabelText.className = 'font-label-md text-label-md font-bold text-amber-700';
+        headerMarginBadge.className = 'inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-amber-100 text-amber-800 font-headline-sm text-label-md font-bold transition-all';
+        headerMarginBadge.innerHTML = '<span class="w-2 h-2 rounded-full bg-amber-600"></span><span>Margin Sedang (' + actualMargin + '%)</span>';
+      } else {
+        healthLabelText.textContent = actualMargin + '% (Rendah/Kritis)';
+        healthLabelText.className = 'font-label-md text-label-md font-bold text-red-700';
+        headerMarginBadge.className = 'inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-red-100 text-red-800 font-headline-sm text-label-md font-bold transition-all';
+        headerMarginBadge.innerHTML = '<span class="w-2 h-2 rounded-full bg-red-600"></span><span>Margin Kritis (' + actualMargin + '%)</span>';
+      }
+    }
+
+    // Attach listeners
+    listContainer.addEventListener('input', function (e) {
+      if (e.target.classList.contains('ingredient-qty')) {
+        calculateHPP();
+      }
+    });
+
+    listContainer.addEventListener('click', function (e) {
+      const deleteBtn = e.target.closest('.btn-remove-row');
+      if (deleteBtn) {
+        const row = deleteBtn.closest('.ingredient-row');
+        if (row && listContainer.querySelectorAll('.ingredient-row').length > 1) {
+          row.remove();
+          calculateHPP();
+        } else {
+          alert('Minimal resep harus memiliki 1 bahan baku.');
+        }
+      }
+    });
+
+    inputOverhead.addEventListener('input', calculateHPP);
+
+    marginSlider.addEventListener('input', function () {
+      const currentHPP = calculateHPP();
+      // Auto-suggest override if user changes target slider
+      const marginPct = parseFloat(marginSlider.value) || 50;
+      let calculatedPrice = currentHPP;
+      if (marginPct < 100) calculatedPrice = currentHPP / (1 - (marginPct / 100));
+      const roundedPrice = Math.round(calculatedPrice / 500) * 500;
+      inputActualPrice.value = roundedPrice;
+      updatePricing(currentHPP);
+    });
+
+    inputActualPrice.addEventListener('input', function () {
+      const currentHPP = calculateHPP();
+      updatePricing(currentHPP);
+    });
+
+    // Add ingredient action simulation
+    btnAddIngredient.addEventListener('click', function () {
+      const newRow = document.createElement('div');
+      newRow.className = 'ingredient-row py-3.5 flex flex-col sm:flex-row sm:items-center justify-between gap-3 group animate-fadeIn';
+      newRow.dataset.costUnit = '150'; // default cost 150 per gram/ml
+      newRow.innerHTML = `
+        <div class="flex-1 min-w-0">
+          <div class="flex items-center gap-2">
+            <input type="text" value="Bahan Tambahan Baru" class="font-headline-sm text-body-lg text-on-surface font-semibold bg-transparent border-b border-dashed border-outline-variant focus:outline-none focus:border-primary py-0.5" />
+            <span class="px-2 py-0.5 rounded bg-surface-container text-on-surface-variant font-label-md text-label-md">Bahan Tambahan</span>
+          </div>
+          <div class="font-label-md text-label-md text-on-surface-variant mt-0.5">
+            Acuan: Rp 150 / gram
+          </div>
+        </div>
+        <div class="flex items-center gap-4 justify-between sm:justify-end">
+          <div class="flex items-center bg-surface-container-low rounded-lg p-1 border border-outline-variant/40 focus-within:border-primary">
+            <input type="number" step="1" min="0" value="10" class="ingredient-qty w-14 bg-transparent text-right font-money-md text-money-md text-on-surface focus:outline-none px-1" />
+            <span class="font-label-md text-label-md text-on-surface-variant font-medium px-2">g</span>
+          </div>
+          <div class="text-right min-w-[100px]">
+            <div class="ingredient-subtotal font-money-md text-money-md font-bold text-on-surface tabular-nums">Rp 1.500</div>
+            <div class="font-label-md text-[11px] text-primary flex items-center justify-end gap-0.5">
+              <span class="material-symbols-outlined text-[12px]">sync</span> otomatis
+            </div>
+          </div>
+          <button type="button" class="btn-remove-row p-1 text-on-surface-variant/50 hover:text-error transition-colors rounded hover:bg-error-container/30" title="Hapus bahan">
+            <span class="material-symbols-outlined text-[20px]">delete</span>
+          </button>
+        </div>
+      `;
+      listContainer.appendChild(newRow);
+      calculateHPP();
+    });
+
+    // AI Pricing Button interactive ripple
+    btnAiPricing.addEventListener('click', function () {
+      const originalText = btnAiPricing.innerHTML;
+      btnAiPricing.innerHTML = '<span class="material-symbols-outlined animate-spin text-[18px]">progress_activity</span><span>Menganalisis 14 Kedai Sekitar...</span>';
+      btnAiPricing.disabled = true;
+
+      setTimeout(function () {
+        btnAiPricing.innerHTML = '<span class="material-symbols-outlined text-[18px]">check</span><span>Rekomendasi AI Diperbarui!</span>';
+        marginSlider.value = 51;
+        inputActualPrice.value = 18000;
+        calculateHPP();
+        setTimeout(function () {
+          btnAiPricing.innerHTML = originalText;
+          btnAiPricing.disabled = false;
+        }, 2000);
+      }, 700);
+    });
+
+    btnApplyAiPrice.addEventListener('click', function () {
+      inputActualPrice.value = 18000;
+      marginSlider.value = 51;
+      calculateHPP();
+    });
+
+    btnResetForm.addEventListener('click', function () {
+      if (confirm('Kembalikan formula resep ke kondisi awal tersimpan?')) {
+        window.location.reload();
+      }
+    });
+
+    btnSaveRecipe.addEventListener('click', function () {
+      const name = document.getElementById('recipeNameInput').value;
+      btnSaveRecipe.innerHTML = '<span class="material-symbols-outlined text-[20px]">done_all</span><span>Resep Tersimpan!</span>';
+      btnSaveRecipe.classList.add('bg-emerald-700');
+      setTimeout(function () {
+        btnSaveRecipe.innerHTML = '<span class="material-symbols-outlined text-[20px]">check_circle</span><span>Simpan Resep</span>';
+        btnSaveRecipe.classList.remove('bg-emerald-700');
+      }, 2500);
+    });
+
+    // Initial calculation on load
+    calculateHPP();
+  })();
+</script></main></div>
+
+</body></html>

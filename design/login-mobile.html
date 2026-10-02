@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+
+<html lang="id"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" name="viewport"/>
+<meta content="mobile_stack" name="shell-type"/>
+<title>Login - HPPKu</title>
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible+Next:ital,wght@0,400..700;1,400..700&amp;family=Geist+Mono:wght@400..700&amp;family=Plus+Jakarta+Sans:wght@500;600;700;800&amp;family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+    tailwind.config = {
+      darkMode: "class",
+      theme: {
+        extend: {
+          colors: {
+            "surface": "#FAFAF7",
+            "background": "#FAFAF7",
+            "primary": "#0F766E",
+            "primary-dark": "#0D655E",
+            "primary-container": "#0F766E",
+            "on-primary": "#ffffff",
+            "primary-light": "#E6F4F2",
+            "stone-border": "#E7E5DF",
+            "on-surface": "#1A1C1B",
+            "on-surface-variant": "#57534E",
+            "outline": "#78716C",
+            "outline-light": "#E2E8F0"
+          },
+          fontFamily: {
+            sans: ['"Plus Jakarta Sans"', 'sans-serif'],
+            display: ['"Plus Jakarta Sans"', 'sans-serif'],
+            mono: ['"Geist Mono"', 'monospace'],
+          }
+        }
+      }
+    };
+  </script>
+<style>
+    @layer base {
+      html, body {
+        width: 100vw;
+        min-height: 100%;
+        margin: 0;
+        padding: 0;
+        background-color: #FAFAF7;
+        font-family: 'Plus Jakarta Sans', sans-serif;
+        color: #1c1917;
+        -webkit-tap-highlight-color: transparent;
+      }
+      body {
+        overscroll-behavior-y: none;
+      }
+      .pb-safe {
+        padding-bottom: max(1.25rem, env(safe-area-inset-bottom, 16px));
+      }
+      .pt-safe {
+        padding-top: max(0.75rem, env(safe-area-inset-top, 12px));
+      }
+    }
+  </style>
+</head>
+<body class="bg-[#FAFAF7] font-sans text-stone-900 min-h-screen flex flex-col antialiased selection:bg-[#0F766E]/20">
+<!-- Header Atas Bersih -->
+<header class="sticky top-0 z-40 w-full bg-[#FAFAF7]/95 backdrop-blur-md border-b border-[#E7E5DF] pt-safe transition-all">
+<div class="h-14 px-4 flex items-center justify-between">
+<button class="inline-flex items-center gap-1.5 py-2 px-2.5 -ml-2 rounded-lg text-stone-700 hover:text-[#0F766E] hover:bg-stone-100 active:scale-95 transition-all text-sm font-semibold" onclick="history.back()" type="button">
+<span class="material-symbols-outlined text-[20px]">arrow_back</span>
+<span>Kembali</span>
+</button>
+<!-- Brand HPPKu Logo -->
+<div class="flex items-center gap-2">
+<div class="w-8 h-8 rounded-lg bg-[#0F766E] flex items-center justify-center text-white shadow-sm font-bold text-base tracking-tight font-display">
+          H
+        </div>
+<span class="font-bold text-lg tracking-tight text-stone-900 font-display">HPP<span class="text-[#0F766E]">Ku</span></span>
+</div>
+</div>
+</header>
+<!-- Main Content Container -->
+<main class="flex-1 flex flex-col w-full max-w-[420px] mx-auto px-4 py-4 pb-safe space-y-4">
+<!-- Branded Hero Mini Banner -->
+<div class="relative overflow-hidden bg-[#0F766E] text-white rounded-2xl p-4 shadow-sm border border-[#0D655E]">
+<div class="relative z-10 space-y-2">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-[20px] text-[#A3FAEF]">storefront</span>
+<h2 class="text-[15px] font-bold tracking-tight text-white leading-tight font-display">
+            Kelola Untung Rugi Usaha Kulinermu
+          </h2>
+</div>
+<p class="text-[12.5px] text-[#D1FAF4] leading-relaxed">
+          Pantau margin resep &amp; cashflow harian tanpa ribet.
+        </p>
+<!-- Mini chip preview stat -->
+<div class="inline-flex items-center gap-2 px-2.5 py-1 rounded-full bg-white/10 backdrop-blur-sm border border-white/20 text-[11px] text-white font-mono tracking-tight mt-1">
+<span class="w-1.5 h-1.5 rounded-full bg-[#34D399] animate-pulse"></span>
+<span>Rp 485.000 / hari</span>
+<span class="text-white/60">•</span>
+<span class="text-[#A3FAEF] font-semibold">Margin Sehat 67%</span>
+</div>
+</div>
+<!-- Background decorative glow -->
+<div class="absolute -right-6 -bottom-8 w-28 h-28 bg-[#14B8A6]/30 rounded-full blur-2xl pointer-events-none"></div>
+</div>
+<!-- Container Form Card -->
+<section class="bg-white border border-[#E7E5DF] rounded-2xl p-5 shadow-sm space-y-5">
+<div>
+<h1 class="text-xl font-bold text-stone-900 tracking-tight font-display">Masuk ke Akunmu</h1>
+<p class="text-[13px] text-stone-500 mt-1">
+          Belum punya akun? <a class="text-[#0F766E] font-semibold hover:underline underline-offset-2" href="#">Daftar gratis</a>
+</p>
+</div>
+<form class="space-y-4" onsubmit="event.preventDefault();">
+<!-- Input Email Bisnis -->
+<div class="space-y-1.5">
+<label class="block text-xs font-semibold text-stone-700 uppercase tracking-wider" for="email-input">
+            Email Bisnis / Resto
+          </label>
+<div class="relative flex items-center">
+<input class="w-full h-11 pl-3.5 pr-10 text-[14px] text-stone-800 bg-[#FAFAF7] border border-stone-200 rounded-lg placeholder:text-stone-400 focus:outline-none focus:ring-2 focus:ring-[#0F766E]/20 focus:border-[#0F766E] transition-all" id="email-input" placeholder="budi.santoso@warungmakan.com" type="email" value="budi.santoso@warungmakan.com"/>
+<span class="material-symbols-outlined text-stone-400 absolute right-3 pointer-events-none text-[20px]">
+              mail
+            </span>
+</div>
+</div>
+<!-- Input Kata Sandi -->
+<div class="space-y-1.5">
+<label class="block text-xs font-semibold text-stone-700 uppercase tracking-wider" for="password-input">
+            Kata Sandi
+          </label>
+<div class="relative flex items-center">
+<input class="w-full h-11 pl-3.5 pr-11 text-[14px] text-stone-800 bg-[#FAFAF7] border border-stone-200 rounded-lg placeholder:text-stone-400 focus:outline-none focus:ring-2 focus:ring-[#0F766E]/20 focus:border-[#0F766E] transition-all" id="password-input" placeholder="Masukkan kata sandi" type="password" value="rahasia123"/>
+<button aria-label="Tampilkan atau sembunyikan kata sandi" class="absolute right-0 top-0 h-11 w-11 flex items-center justify-center text-stone-400 hover:text-stone-700 active:scale-95 transition-colors focus:outline-none" id="toggle-password" type="button">
+<span class="material-symbols-outlined text-[20px]" id="eye-icon">visibility</span>
+</button>
+</div>
+</div>
+<!-- Baris Remember Me & Lupa Kata Sandi -->
+<div class="flex items-center justify-between pt-0.5">
+<label class="flex items-center gap-2 cursor-pointer select-none">
+<input checked="" class="w-4 h-4 rounded text-[#0F766E] border-stone-300 focus:ring-[#0F766E] focus:ring-offset-0 focus:outline-none cursor-pointer" type="checkbox"/>
+<span class="text-xs text-stone-600 font-medium">Ingat saya di HP ini</span>
+</label>
+<a class="text-xs font-semibold text-[#0F766E] hover:underline underline-offset-2 transition-colors" href="#">
+            Lupa kata sandi?
+          </a>
+</div>
+<!-- Primary CTA: Tombol Masuk -->
+<button class="w-full h-[46px] bg-[#0F766E] hover:bg-[#0D655E] active:bg-[#0A4F4A] text-white font-semibold text-[15px] rounded-lg shadow-sm flex items-center justify-center gap-2 active:scale-[0.99] transition-all font-display mt-2" type="submit">
+<span>Masuk ke Dashboard</span>
+<span class="material-symbols-outlined text-[19px]">arrow_forward</span>
+</button>
+<!-- Divider Bersih -->
+<div class="relative flex items-center justify-center my-3 py-1">
+<div class="w-full border-t border-stone-200"></div>
+<span class="absolute bg-white px-3 text-[11px] font-semibold text-stone-400 uppercase tracking-wider">
+            atau masuk dengan
+          </span>
+</div>
+<!-- Tombol Google -->
+<button class="w-full h-11 bg-white hover:bg-stone-50 active:bg-stone-100 border border-stone-200 text-stone-700 font-medium text-[14px] rounded-lg flex items-center justify-center gap-2.5 active:scale-[0.99] transition-all shadow-sm" type="button">
+<svg class="w-4 h-4 shrink-0" viewbox="0 0 24 24">
+<path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"></path>
+<path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"></path>
+<path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z" fill="#FBBC05"></path>
+<path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z" fill="#EA4335"></path>
+</svg>
+<span>Masuk dengan Akun Google</span>
+</button>
+</form>
+</section>
+<!-- Footer Legalitas & Keamanan -->
+<footer class="pt-2 pb-4 text-center space-y-3 px-2">
+<!-- Badge Keamanan -->
+<div class="inline-flex items-center justify-center gap-1.5 px-3 py-1 rounded-full bg-emerald-50 text-emerald-800 border border-emerald-200/70 text-[11px] font-medium mx-auto">
+<span class="material-symbols-outlined text-[15px] text-emerald-600">lock</span>
+<span>Enkripsi data resep &amp; omzet terjamin</span>
+</div>
+<!-- Teks Legal -->
+<p class="text-[11.5px] leading-relaxed text-stone-500 max-w-[320px] mx-auto">
+        Dengan masuk, kamu menyetujui 
+        <a class="text-stone-700 underline underline-offset-2 hover:text-[#0F766E] font-medium" href="#">Syarat &amp; Ketentuan</a> 
+        dan 
+        <a class="text-stone-700 underline underline-offset-2 hover:text-[#0F766E] font-medium" href="#">Kebijakan Privasi</a> 
+        HPPKu.
+      </p>
+</footer>
+</main>
+<!-- Interactive Scripts -->
+<script>
+    (function() {
+      const toggleBtn = document.getElementById('toggle-password');
+      const pwdInput = document.getElementById('password-input');
+      const eyeIcon = document.getElementById('eye-icon');
+
+      if (toggleBtn && pwdInput && eyeIcon) {
+        toggleBtn.addEventListener('click', function(e) {
+          e.preventDefault();
+          const isPassword = pwdInput.type === 'password';
+          pwdInput.type = isPassword ? 'text' : 'password';
+          eyeIcon.textContent = isPassword ? 'visibility_off' : 'visibility';
+        });
+      }
+    })();
+  </script>
+</body></html>

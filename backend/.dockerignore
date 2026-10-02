@@ -1,0 +1,13 @@
+node_modules
+dist
+src/generated
+.env
+.env.*
+!.env.example
+test
+coverage
+.git
+.claude
+.agents
+.windsurf
+*.log
