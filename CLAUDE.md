@@ -17,7 +17,7 @@ Profile: `saas-web-no-ai` · Pasangan: `AGENTS.md`
 - Frontend lengkap per desain `design/` (Stitch) dan **terintegrasi penuh ke backend (2026-09-27)** — tidak ada data dummy lagi (`lib/mock.ts` dihapus).
 - Keputusan bigboss: stok/inventori **tidak** dibangun (dihapus dari UI, diganti tren harga dari `IngredientPriceLog`); porsi terjual = **input manual** (transaksi INCOME + `recipeId` + `portions` → `GET /reports/recipe-sales`); AI nyata via OpenRouter.
 - AI aktif (key diisi 2026-09-27). Model wajib dukung gambar + `structured_outputs`; default `dots-studio/dots-3-note-preview:free` (OCR ±35 dtk, saran harga ±60 dtk). Jangan `openrouter/free` (router acak → JSON gagal); `qwen/qwen3.8-27b:free` sering rate-limit.
-- Sisa task non-integrasi: `/pricing` (3-13), UpgradeModal saat 402 (3-15), Coolify (3-16), halaman legal (3-21, teks dari bigboss).
+- Sisa task: `/pricing` (3-13), UsageMeter (3-14), UpgradeModal saat 402 (3-15), Coolify (3-16), halaman legal (3-21, teks dari bigboss), reset sandi/verifikasi email/Google (A-07), cookie lintas subdomain production (A-08).
 - Git repo di root (remote `origin` = `git@github.com:zagoourai-hub/usahaku-project.git`, cabang `main`), tanpa workspace root. Jalankan perintah dari dalam `backend/` atau `frontend/`.
 - **AI diizinkan bigboss (2026-09-26)** untuk OCR struk & saran harga: backend nyata via OpenRouter (dev: model `:free`, lib gratis). Fitur AI lain tetap butuh konfirmasi.
 
