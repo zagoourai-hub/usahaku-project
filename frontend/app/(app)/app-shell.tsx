@@ -54,7 +54,7 @@ export function AppShell({ children, defaultSidebarOpen }: { children: ReactNode
   const { data: business } = useBusiness();
 
   const logout = useMutation({
-    mutationFn: () => api("/auth/logout", { method: "POST" }),
+    mutationFn: () => api("/auth/sign-out", { method: "POST", body: "{}" }),
     onSettled: () => {
       queryClient.clear();
       router.replace("/login");

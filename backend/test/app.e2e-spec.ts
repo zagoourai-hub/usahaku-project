@@ -27,21 +27,35 @@ describe('UsahaKu API (e2e)', () => {
     suggestPrice: vi.fn(),
   };
 
+  // Better Auth rejects cookie-bearing POSTs without a trusted Origin (CSRF).
+  const ORIGIN = 'http://localhost:3000';
+  const signUp = (
+    server: ReturnType<INestApplication['getHttpServer']>,
+    body: Record<string, unknown>,
+    headers: Record<string, string> = {},
+  ) =>
+    request(server)
+      .post('/auth/sign-up/email')
+      .set('Origin', ORIGIN)
+      .set(headers)
+      .send(body);
+
   const register = async () => {
-    const agent = request.agent(app.getHttpServer());
+    const agent = request.agent(app.getHttpServer()).set('Origin', ORIGIN);
     await agent
-      .post('/auth/register')
+      .post('/auth/sign-up/email')
       .send({
         name: 'Tester',
         email: `t-${randomUUID()}@test.local`,
         password: 'rahasia123',
       })
-      .expect(201);
+      .expect(200);
     return agent;
   };
 
   beforeAll(async () => {
     if (existsSync('.env')) process.loadEnvFile();
+    process.env.FRONTEND_ORIGIN = ORIGIN;
     // Throttling is covered by its own app below; disable it for the rest.
     const mod = await Test.createTestingModule({ imports: [AppModule] })
       .overrideProvider(ThrottlerStorage)
@@ -71,37 +85,31 @@ describe('UsahaKu API (e2e)', () => {
   });
 
   describe('auth', () => {
-    it('sets an httpOnly cookie, never returns the token in the body', async () => {
-      const res = await request(app.getHttpServer())
-        .post('/auth/register')
-        .send({
-          name: 'X',
-          email: `x-${randomUUID()}@test.local`,
-          password: 'rahasia123',
-        })
-        .expect(201);
-      expect(res.body).toEqual({ ok: true });
+    it('sets an httpOnly session cookie on sign-up', async () => {
+      const res = await signUp(app.getHttpServer(), {
+        name: 'X',
+        email: `x-${randomUUID()}@test.local`,
+        password: 'rahasia123',
+      }).expect(200);
       const cookie = String(res.headers['set-cookie']);
-      expect(cookie).toMatch(/access_token=.+HttpOnly/);
+      expect(cookie).toMatch(/usahaku\.session_token=.+HttpOnly/);
+      expect(cookie).toMatch(/SameSite=Lax/i);
     });
 
     it('rejects requests without / with a forged cookie', async () => {
       await request(app.getHttpServer()).get('/business/me').expect(401);
       await request(app.getHttpServer())
         .get('/business/me')
-        .set('Cookie', 'access_token=forged.token.value')
+        .set('Cookie', 'usahaku.session_token=forged.token.value')
         .expect(401);
     });
 
-    it('logout revokes the token: a copied cookie stops working', async () => {
-      const res = await request(app.getHttpServer())
-        .post('/auth/register')
-        .send({
-          name: 'L',
-          email: `l-${randomUUID()}@test.local`,
-          password: 'rahasia123',
-        })
-        .expect(201);
+    it('sign-out revokes the session: a copied cookie stops working', async () => {
+      const res = await signUp(app.getHttpServer(), {
+        name: 'L',
+        email: `l-${randomUUID()}@test.local`,
+        password: 'rahasia123',
+      }).expect(200);
       const cookie = String(res.headers['set-cookie']).split(';')[0];
       const me = await request(app.getHttpServer())
         .get('/business/me')
@@ -113,8 +121,10 @@ describe('UsahaKu API (e2e)', () => {
       });
       expect(me.headers['x-powered-by']).toBeUndefined();
       await request(app.getHttpServer())
-        .post('/auth/logout')
+        .post('/auth/sign-out')
+        .set('Origin', ORIGIN)
         .set('Cookie', cookie)
+        .send({})
         .expect(200);
       await request(app.getHttpServer())
         .get('/business/me')
@@ -122,32 +132,76 @@ describe('UsahaKu API (e2e)', () => {
         .expect(401);
     });
 
+    it('rejects cookie-bearing POST from an untrusted origin (CSRF)', async () => {
+      const res = await signUp(app.getHttpServer(), {
+        name: 'C',
+        email: `c-${randomUUID()}@test.local`,
+        password: 'rahasia123',
+      }).expect(200);
+      const cookie = String(res.headers['set-cookie']).split(';')[0];
+      await request(app.getHttpServer())
+        .post('/auth/sign-out')
+        .set('Origin', 'https://evil.example')
+        .set('Cookie', cookie)
+        .send({})
+        .expect(403);
+    });
+
     it('rejects duplicate email and wrong password', async () => {
       const email = `d-${randomUUID()}@test.local`;
       const body = { name: 'D', email, password: 'rahasia123' };
-      await request(app.getHttpServer())
-        .post('/auth/register')
-        .send(body)
-        .expect(201);
-      await request(app.getHttpServer())
-        .post('/auth/register')
-        .send(body)
-        .expect(409);
-      await request(app.getHttpServer())
-        .post('/auth/login')
+      const server = app.getHttpServer();
+      await signUp(server, body).expect(200);
+      await signUp(server, body).expect(422);
+      await request(server)
+        .post('/auth/sign-in/email')
+        .set('Origin', ORIGIN)
         .send({ email, password: 'salahsalah' })
         .expect(401);
-      await request(app.getHttpServer())
-        .post('/auth/login')
+      await request(server)
+        .post('/auth/sign-in/email')
+        .set('Origin', ORIGIN)
         .send({ email: email.toUpperCase(), password: 'rahasia123' })
         .expect(200);
     });
 
+    it('still verifies password hashes of accounts created before Better Auth', async () => {
+      const email = `legacy-${randomUUID()}@test.local`;
+      const argon2 = await import('argon2');
+      // Same shape as the migration: credential accountId = user id.
+      const id = randomUUID();
+      await prisma.user.create({
+        data: {
+          id,
+          email,
+          emailCanonical: email,
+          name: 'Legacy',
+          accounts: {
+            create: {
+              accountId: id,
+              providerId: 'credential',
+              password: await argon2.hash('rahasia123'),
+            },
+          },
+          subscription: { create: {} },
+          business: { create: { name: 'Usaha Lama' } },
+        },
+      });
+      const agent = request.agent(app.getHttpServer()).set('Origin', ORIGIN);
+      await agent
+        .post('/auth/sign-in/email')
+        .send({ email, password: 'rahasia123' })
+        .expect(200);
+      const me = await agent.get('/business/me').expect(200);
+      expect(me.body.name).toBe('Usaha Lama');
+    });
+
     it('validates input and strips unknown fields', async () => {
-      await request(app.getHttpServer())
-        .post('/auth/register')
-        .send({ name: 'A', email: 'bukan-email', password: '123' })
-        .expect(400);
+      await signUp(app.getHttpServer(), {
+        name: 'A',
+        email: 'bukan-email',
+        password: '123',
+      }).expect(400);
       await a.patch('/business/me').send({ userId: randomUUID() }).expect(400);
     });
 
@@ -940,22 +994,23 @@ describe('UsahaKu API (e2e)', () => {
       server: ReturnType<INestApplication['getHttpServer']>,
       email: string,
       ip?: string,
-    ) => {
-      const req = request(server).post('/auth/register');
-      if (ip) req.set('X-Forwarded-For', ip);
-      return req.send({ name: 'M', email, password: 'rahasia123' });
-    };
+    ) =>
+      signUp(
+        server,
+        { name: 'M', email, password: 'rahasia123' },
+        ip ? { 'X-Forwarded-For': ip } : {},
+      );
 
     it('treats gmail dots and +tags as the same mailbox', async () => {
       const base = `m${randomUUID().replaceAll('-', '').slice(0, 12)}`;
       const server = app.getHttpServer();
-      await signup(server, `${base}@gmail.com`).expect(201);
+      await signup(server, `${base}@gmail.com`).expect(200);
       await signup(
         server,
         `${base.slice(0, 5)}.${base.slice(5)}@gmail.com`,
-      ).expect(409);
-      await signup(server, `${base}+promo@gmail.com`).expect(409);
-      await signup(server, `${base}@googlemail.com`).expect(409);
+      ).expect(422);
+      await signup(server, `${base}+promo@gmail.com`).expect(422);
+      await signup(server, `${base}@googlemail.com`).expect(422);
     });
 
     it('rejects disposable email domains', async () => {
@@ -990,27 +1045,29 @@ describe('UsahaKu API (e2e)', () => {
       const verify = vi
         .spyOn(globalThis, 'fetch')
         .mockImplementation(async (_url, init) => {
-          const body = init?.body as URLSearchParams;
-          return Response.json({ success: body.get('response') === 'good' });
+          const sent = JSON.parse(init?.body as string) as {
+            response?: string;
+          };
+          return Response.json({ success: sent.response === 'good' });
         });
       const server = guarded.getHttpServer();
-      const email = () => `ts-${randomUUID()}@test.local`;
-      const post = (turnstileToken?: string) =>
-        request(server)
-          .post('/auth/register')
-          .send({
+      const post = (token?: string) =>
+        signUp(
+          server,
+          {
             name: 'T',
-            email: email(),
+            email: `ts-${randomUUID()}@test.local`,
             password: 'rahasia123',
-            turnstileToken,
-          });
+          },
+          token ? { 'x-captcha-response': token } : {},
+        );
       try {
         await post().expect(400); // missing token, verifier never called
         expect(verify).not.toHaveBeenCalled();
-        await post('bad').expect(400);
-        await post('good').expect(201);
+        await post('bad').expect(403);
+        await post('good').expect(200);
         verify.mockRejectedValueOnce(new Error('network down'));
-        await post('good').expect(503); // fails closed
+        await post('good').expect(500); // fails closed
       } finally {
         verify.mockRestore();
         await guarded.close();
@@ -1033,16 +1090,16 @@ describe('UsahaKu API (e2e)', () => {
         `${net}.${Math.floor(Math.random() * 250) + 1}`;
       const ip = randomIp('203.0.113');
       const dup = `dup-${randomUUID()}@test.local`;
-      await signup(server, dup, ip).expect(201);
-      await signup(server, dup, ip).expect(409); // failed: must not use a slot
-      await signup(server, `b-${randomUUID()}@test.local`, ip).expect(201);
+      await signup(server, dup, ip).expect(200);
+      await signup(server, dup, ip).expect(422); // failed: must not use a slot
+      await signup(server, `b-${randomUUID()}@test.local`, ip).expect(200);
       await signup(server, `c-${randomUUID()}@test.local`, ip).expect(429);
       // another IP is unaffected
       await signup(
         server,
         `d-${randomUUID()}@test.local`,
         randomIp('198.51.100'),
-      ).expect(201);
+      ).expect(200);
       await capped.close();
     });
   });
@@ -1061,7 +1118,14 @@ describe('UsahaKu API (e2e)', () => {
     };
     const codes: number[] = [];
     for (let i = 0; i < 12; i++) {
-      codes.push((await request(server).post('/auth/login').send(body)).status);
+      codes.push(
+        (
+          await request(server)
+            .post('/auth/sign-in/email')
+            .set('Origin', ORIGIN)
+            .send(body)
+        ).status,
+      );
     }
     await throttled.close();
     expect(codes).toContain(429);

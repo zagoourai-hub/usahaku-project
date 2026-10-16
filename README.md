@@ -41,7 +41,7 @@ Kalkulator **HPP resep** dan **catatan kas** untuk UMKM kuliner (F&B). Hitung mo
 | Lapisan | Pilihan |
 |---|---|
 | Frontend | Next.js 16 (App Router), React 19, TypeScript, Tailwind CSS v4, shadcn/ui, TanStack Query, React Hook Form + Zod |
-| Backend | NestJS 12, Prisma 7, PostgreSQL, JWT di cookie httpOnly, class-validator |
+| Backend | NestJS 12, Prisma 7, PostgreSQL, Better Auth (sesi cookie httpOnly), class-validator |
 | Antrean dan file | Redis + BullMQ (OCR struk), penyimpanan S3-compatible (SeaweedFS di dev) |
 | AI | Vercel AI SDK + OpenRouter (atau Ollama untuk dev lokal) |
 | Ops | Docker, GitHub Actions |
@@ -66,7 +66,7 @@ docker compose -f docker/docker-compose.yml up -d
 
 # 2. Backend (http://localhost:4000)
 cd backend
-cp .env.example .env          # isi JWT_SECRET (min. 32 karakter), lihat komentar di file
+cp .env.example .env          # isi BETTER_AUTH_SECRET (min. 32 karakter), lihat komentar di file
 pnpm install                  # sekaligus prisma generate
 pnpm prisma migrate dev --config prisma7.config.ts
 pnpm start:dev

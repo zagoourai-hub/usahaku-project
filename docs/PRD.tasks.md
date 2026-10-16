@@ -23,7 +23,7 @@ usahaku/
 └── docs/       PRD + tracker ini
 ```
 
-- **Auth:** JWT di httpOnly cookie (bukan localStorage) — profile `saas-web-no-ai`. PRD menyebut "attach JWT" di api-client → diganti `credentials: "include"`.
+- **Auth:** Better Auth, sesi di DB + cookie httpOnly (bukan localStorage) — profile `saas-web-no-ai`. Dipindah dari JWT custom 2026-10-16 (keputusan bigboss: library + plugin luas). PRD menyebut "attach JWT" di api-client → diganti `credentials: "include"`.
 - **Data:** semua query di-scope `businessId` user; uang `Decimal(14,2)`, kuantitas `Decimal(12,3)`.
 - **Validasi:** BE pakai `class-validator` DTO (profile), FE pakai Zod + RHF.
 - **Frontend route:** `/` landing (publik) · `/login` `/register` `/onboarding` · app terproteksi via `proxy.ts`.
@@ -32,8 +32,8 @@ usahaku/
 
 ## Backend API (terintegrasi FE)
 
-Base `http://localhost:4000`, cookie `access_token` (FE fetch `credentials: "include"`). Uang/kuantitas di response = string Decimal.
-`POST /auth/register|login|logout` · `GET|PATCH /business/me` · `GET /subscription/me` · CRUD `/ingredients` · CRUD `/recipes` + `GET /recipes/:id/hpp-history` · CRUD `/categories` · CRUD `/transactions` · `GET /reports/summary|profit-loss|recipe-sales|export` · `GET /notifications` · `POST /receipts` (multipart `image`, 202) + `GET /receipts/:id` (polling) + `GET /receipts/:id/image` + `POST /receipts/:id/confirm` · `POST /recipes/:id/price-suggestion` + `GET /recipes/:id/price-suggestions`. Error kuota = **402**, AI tidak tersedia/belum dikonfigurasi = **503**.
+Base `http://localhost:4000`, cookie `usahaku.session_token` (FE fetch `credentials: "include"`). Uang/kuantitas di response = string Decimal.
+`POST /auth/sign-up/email|sign-in/email|sign-out` · `GET|PATCH /business/me` · `GET /subscription/me` · CRUD `/ingredients` · CRUD `/recipes` + `GET /recipes/:id/hpp-history` · CRUD `/categories` · CRUD `/transactions` · `GET /reports/summary|profit-loss|recipe-sales|export` · `GET /notifications` · `POST /receipts` (multipart `image`, 202) + `GET /receipts/:id` (polling) + `GET /receipts/:id/image` + `POST /receipts/:id/confirm` · `POST /recipes/:id/price-suggestion` + `GET /recipes/:id/price-suggestions`. Error kuota = **402**, AI tidak tersedia/belum dikonfigurasi = **503**.
 
 `pnpm audit --prod` backend & frontend: 0 temuan (backend via `overrides` di `backend/pnpm-workspace.yaml`; hapus saat upstream bump).
 

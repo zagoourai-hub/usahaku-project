@@ -1,53 +1,22 @@
-import { createHash } from 'node:crypto';
 import {
   CanActivate,
   createParamDecorator,
   ExecutionContext,
+  Inject,
   Injectable,
-  OnModuleDestroy,
   SetMetadata,
   UnauthorizedException,
 } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
-import { JwtService } from '@nestjs/jwt';
+import { fromNodeHeaders } from 'better-auth/node';
 import type { Request } from 'express';
-import { Redis } from 'ioredis';
-
-export const AUTH_COOKIE = 'access_token';
+import { PrismaService } from '../prisma/prisma.service.js';
+import { AUTH } from './auth.constants.js';
+import type { Auth } from './auth.config.js';
 
 export interface AuthPayload {
   sub: string; // userId
   bid: string; // businessId
-  exp?: number; // set by jwt on sign
-}
-
-/**
- * Logged-out tokens, kept in Redis until they would expire anyway.
- * Fails closed: if Redis is unreachable, authenticated requests error out.
- */
-@Injectable()
-export class TokenDenylist implements OnModuleDestroy {
-  private readonly redis = new Redis(
-    process.env.REDIS_URL || 'redis://localhost:6379',
-    { maxRetriesPerRequest: 1, lazyConnect: true },
-  );
-
-  private key(token: string) {
-    return `revoked:${createHash('sha256').update(token).digest('hex')}`;
-  }
-
-  async revoke(token: string, exp: number) {
-    const ttl = exp - Math.floor(Date.now() / 1000);
-    if (ttl > 0) await this.redis.set(this.key(token), '1', 'EX', ttl);
-  }
-
-  async isRevoked(token: string) {
-    return (await this.redis.exists(this.key(token))) === 1;
-  }
-
-  onModuleDestroy() {
-    this.redis.disconnect();
-  }
 }
 
 type AuthedRequest = Request & { auth?: AuthPayload };
@@ -72,13 +41,17 @@ export const CurrentUser = createParamDecorator(
   },
 );
 
-/** Registered globally: every route requires the JWT cookie unless @Public(). */
+/**
+ * Registered globally: every route requires a valid Better Auth session
+ * unless @Public(). Sessions live in the database, so sign-out revokes
+ * immediately.
+ */
 @Injectable()
-export class JwtAuthGuard implements CanActivate {
+export class SessionGuard implements CanActivate {
   constructor(
-    private readonly jwt: JwtService,
+    @Inject(AUTH) private readonly auth: Auth,
     private readonly reflector: Reflector,
-    private readonly denylist: TokenDenylist,
+    private readonly prisma: PrismaService,
   ) {}
 
   async canActivate(ctx: ExecutionContext): Promise<boolean> {
@@ -89,14 +62,16 @@ export class JwtAuthGuard implements CanActivate {
     if (isPublic) return true;
 
     const req = ctx.switchToHttp().getRequest<AuthedRequest>();
-    const token: unknown = req.cookies?.[AUTH_COOKIE];
-    if (typeof token !== 'string') throw new UnauthorizedException();
-    try {
-      req.auth = await this.jwt.verifyAsync<AuthPayload>(token);
-    } catch {
-      throw new UnauthorizedException();
-    }
-    if (await this.denylist.isRevoked(token)) throw new UnauthorizedException();
+    const session = await this.auth.api.getSession({
+      headers: fromNodeHeaders(req.headers),
+    });
+    if (!session) throw new UnauthorizedException();
+    const business = await this.prisma.business.findUnique({
+      where: { userId: session.user.id },
+      select: { id: true },
+    });
+    if (!business) throw new UnauthorizedException();
+    req.auth = { sub: session.user.id, bid: business.id };
     return true;
   }
 }

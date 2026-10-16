@@ -1,7 +1,6 @@
 import { INestApplication, Module, ValidationPipe } from '@nestjs/common';
 import { HttpAdapterHost } from '@nestjs/core';
 import { BullModule } from '@nestjs/bullmq';
-import cookieParser from 'cookie-parser';
 import type { NextFunction, Request, Response } from 'express';
 import { AiModule } from './ai/ai.service.js';
 import { AuthModule } from './auth/auth.module.js';
@@ -70,7 +69,6 @@ export function configureApp(app: INestApplication) {
     res.removeHeader('X-Powered-By');
     next();
   });
-  app.use(cookieParser());
   app.useGlobalPipes(
     new ValidationPipe({
       whitelist: true,

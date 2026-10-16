@@ -35,7 +35,7 @@ jobs:
         ports: ["6379:6379"]
     env:
       DATABASE_URL: postgresql://hppku:hppku@localhost:5432/hppku?schema=public
-      JWT_SECRET: ci-only-secret-not-used-anywhere-else-000
+      BETTER_AUTH_SECRET: ci-only-secret-not-used-anywhere-else-000
       REDIS_URL: redis://localhost:6379
       S3_ENDPOINT: http://localhost:8333
       S3_BUCKET: receipts

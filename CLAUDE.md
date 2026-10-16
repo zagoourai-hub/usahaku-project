@@ -36,11 +36,11 @@ Profile: `saas-web-no-ai` · Pasangan: `AGENTS.md`
 ## Gotcha
 
 - Backend ESM: import relatif pakai ekstensi `.js`.
-- Auth butuh Redis: logout memasukkan token ke daftar blokir (`TokenDenylist` di `auth.guard.ts`). Kalau Redis mati, request yang butuh login gagal (sengaja ditolak, bukan dibiarkan lolos). Deploy di belakang Coolify/Traefik: set `TRUST_PROXY_HOPS=1` agar rate limit melihat IP asli.
-- Anti multi-akun & IP limit: `ThrottlerGuard` global (120/menit/IP, counter di Redis via `RedisThrottlerStorage`), endpoint auth/upload/export/AI lebih ketat lewat `@Throttle`. Register: `emailCanonical` unik (dot gmail & `+tag` dilipat), domain email sekali-pakai ditolak, maks `MAX_SIGNUPS_PER_IP_PER_DAY` (default 3) akun baru per IP/hari (`SignupLimiter`, IPv6 per /64). Register juga cek Cloudflare Turnstile (`TURNSTILE_SECRET_KEY` BE + `NEXT_PUBLIC_TURNSTILE_SITE_KEY` FE build arg; kosong = nonaktif; key tes Cloudflare ada di `backend/.env.example`; fail closed bila verifier tak terjangkau). Test e2e mem-bypass lewat override `ThrottlerStorage` + `SignupLimiter`.
+- Auth = **Better Auth** (`backend/src/auth/auth.config.ts`), mount di `/auth/*` lewat `AuthController` (bukan paket Nest pihak ketiga). Sesi di tabel `Session` (cookie httpOnly `usahaku.session_token`, 7 hari), sandi argon2 di `Account.password`, sign-out mencabut sesi seketika. Endpoint: `POST /auth/sign-up/email|sign-in/email|sign-out`, `GET /auth/get-session`. Daftar: body `{name,email,password,businessName?}` + header `x-captcha-response`; Business+Subscription+kategori default dibuat di `databaseHooks.user.create.after`. Origin check (CSRF) wajib aktif: `FRONTEND_ORIGIN` harus benar. Respons sign-up/sign-in memuat `token` sesi di body (bawaan Better Auth). Redis dipakai throttler (gagal = request ditolak), bukan lagi untuk sesi.
+- Anti multi-akun & IP limit: `ThrottlerGuard` global (120/menit/IP, counter di Redis via `RedisThrottlerStorage`), endpoint auth/upload/export/AI lebih ketat lewat `@Throttle`. Register: `emailCanonical` unik (dot gmail & `+tag` dilipat), domain email sekali-pakai ditolak, maks `MAX_SIGNUPS_PER_IP_PER_DAY` (default 3) akun baru per IP/hari (`SignupLimiter`, IPv6 per /64). Register juga cek Cloudflare Turnstile lewat plugin `captcha` Better Auth (`TURNSTILE_SECRET_KEY` BE + `NEXT_PUBLIC_TURNSTILE_SITE_KEY` FE build arg; kosong = nonaktif; key tes Cloudflare ada di `backend/.env.example`; fail closed bila verifier tak terjangkau). Test e2e mem-bypass lewat override `ThrottlerStorage` + `SignupLimiter`; request ber-cookie perlu header `Origin`.
 - Update DTO: pakai `PartialType(X, NOT_NULL)` / `IsOptionalNotNull` (`dto.decorators.ts`) agar `null` ke kolom wajib jadi 400, bukan 500.
 - Prisma client di `src/generated/prisma`, koneksi via `@prisma/adapter-pg`.
-- Infra dev: `docker compose -f docker/docker-compose.yml up -d` (dari root) → postgres, redis, s3 (SeaweedFS); tambah `--profile app --build` + `JWT_SECRET` untuk jalankan image backend. Env backend: `backend/.env.example`.
+- Infra dev: `docker compose -f docker/docker-compose.yml up -d` (dari root) → postgres, redis, s3 (SeaweedFS); tambah `--profile app --build` + `BETTER_AUTH_SECRET` untuk jalankan image backend. Env backend: `backend/.env.example`.
 - Backend: `typescript` = alias TS6 (Nest CLI butuh compiler API); typecheck TS7: `pnpm typecheck`. e2e (`pnpm test:e2e`) butuh Postgres jalan dan server dev backend **mati** (worker-nya berbagi queue Redis `ocr` dan merebut job test).
 - Next.js versi baru (breaking changes): baca `frontend/node_modules/next/dist/docs/` sebelum menulis kode Next. App Router di `frontend/app/`.
 - Versi terpasang: NestJS 12, Next 16.3, React 19.2, TypeScript 7, Prisma 7.
@@ -49,7 +49,7 @@ Profile: `saas-web-no-ai` · Pasangan: `AGENTS.md`
 - Upload FE: `api()` melewatkan `Content-Type` bila body `FormData`. Gambar struk = `<img>` ke API (cookie), bukan `next/image`.
 - FE HPP live: `frontend/lib/hpp.ts` cermin `backend/src/recipe/hpp-calculator.ts`; ubah keduanya bersamaan, cek `node lib/hpp.check.mts`.
 - FE uang: API kirim Decimal sebagai string. Tampilan pakai `formatIDR` (sen tampil bila ada, `Rp 3.412,50`); penjumlahan/subtotal pakai BigInt (`toScaled`/`centsToString` di `lib/hpp.ts`), jangan float. Persen pakai `formatPct` (koma desimal).
-- FE auth: cookie httpOnly `access_token` dari backend. `proxy.ts` hanya cek keberadaan cookie (tambah route baru ke `matcher`); 401 → `providers.tsx` logout lalu `/login`.
+- FE auth: cookie httpOnly `usahaku.session_token` (`__Secure-` di production) dari backend. `proxy.ts` hanya cek keberadaan cookie (tambah route baru ke `matcher`); 401 → `providers.tsx` logout lalu `/login`.
 - FE pola: form di `<dialog>` native (`app/_components/sheet.tsx`), field di `app/_components/fields.tsx`, RHF + Zod yang mencerminkan DTO backend. Struktur shadcn manual (tanpa `components.json`/CLI init, agar token `globals.css` tidak ditimpa): komponen pihak ketiga di `components/ui/`, `cn()` di `lib/utils.ts`.
 - FE sidebar desktop = `components/ui/animated-sidebar.tsx` (beui.dev, diadaptasi; cari `UsahaKu:`). Status buka/tutup di cookie `sidebar_state`, dibaca server di `app/(app)/layout.tsx` → route app dinamis. Konstanta cookie di `sidebar-cookie.ts` (modul biasa: ekspor non-komponen dari file `"use client"` jadi client reference di server, bukan string). motion tidak bisa animasi `width` antar `var(...)` → pakai angka px.
 - FE waktu ditampilkan "WIB" → format selalu `timeZone: "Asia/Jakarta"` (`timeOf` di `lib/transactions.ts`).
@@ -57,7 +57,7 @@ Profile: `saas-web-no-ai` · Pasangan: `AGENTS.md`
 ## Stack (pasang hanya saat dibutuhkan)
 
 - FE: Next.js + shadcn/ui + Tailwind v4 + TanStack Query + RHF + Zod (+ Zustand bila perlu state global).
-- BE: NestJS12 + Prisma7 + PostgreSQL + JWT httpOnly cookie + class-validator (+ Redis bila perlu).
+- BE: NestJS12 + Prisma7 + PostgreSQL + Better Auth (sesi cookie httpOnly) + class-validator (+ Redis bila perlu).
 - Ops: Docker + Coolify + GitHub Actions.
 - AI: hanya `ai` + `@openrouter/ai-sdk-provider` di `backend/src/ai/` (tanpa `ai-service/` terpisah). Key hanya dari env `OPENROUTER_API_KEY`.
 - Terpasang di FE: lucide-react, react-hook-form, zod, @hookform/resolvers, @tanstack/react-query, motion (sidebar), clsx + tailwind-merge (`cn`).

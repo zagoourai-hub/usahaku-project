@@ -24,13 +24,15 @@ export function LoginForm() {
 
   const onSubmit = handleSubmit(async (values) => {
     try {
-      await api("/auth/login", { method: "POST", body: JSON.stringify(values) });
+      await api("/auth/sign-in/email", { method: "POST", body: JSON.stringify(values) });
       router.replace("/dashboard");
     } catch (err) {
       const message =
         err instanceof ApiError && err.status === 401
           ? "Email atau kata sandi salah."
-          : err instanceof ApiError
+          : err instanceof ApiError && err.status === 429
+            ? "Terlalu banyak percobaan. Tunggu sebentar lalu coba lagi."
+            : err instanceof ApiError
             ? err.message
             : "Terjadi kesalahan. Coba lagi sebentar.";
       setError("root", { message });

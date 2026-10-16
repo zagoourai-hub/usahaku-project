@@ -1,58 +1,43 @@
-import { Body, Controller, HttpCode, Post, Req, Res } from '@nestjs/common';
-import { Throttle } from '@nestjs/throttler';
-import type { CookieOptions, Request, Response } from 'express';
-import { AUTH_COOKIE, Public } from './auth.guard.js';
-import { LoginDto, RegisterDto } from './auth.dto.js';
-import { AuthService, TOKEN_TTL_SECONDS } from './auth.service.js';
+import { All, Controller, Inject, Req, Res } from '@nestjs/common';
+import { toNodeHandler } from 'better-auth/node';
+import type { Request, Response } from 'express';
+import { AUTH } from './auth.constants.js';
+import type { Auth } from './auth.config.js';
+import { Public } from './auth.guard.js';
+import { SignupLimiter } from './rate-limit.js';
 
-const cookieOptions = (): CookieOptions => ({
-  httpOnly: true,
-  secure: process.env.NODE_ENV === 'production',
-  sameSite: 'lax',
-  path: '/',
-});
-
+/**
+ * Mounts Better Auth under /auth (sign-up/email, sign-in/email, sign-out,
+ * get-session, ...). It runs as a Nest route so the global ThrottlerGuard
+ * applies; Better Auth reads the body Nest already parsed.
+ */
 @Controller('auth')
 export class AuthController {
-  constructor(private readonly auth: AuthService) {}
+  private readonly handler: ReturnType<typeof toNodeHandler>;
 
-  @Public()
-  @Post('register')
-  @Throttle({ default: { limit: 5, ttl: 60_000 } })
-  async register(
-    @Body() dto: RegisterDto,
-    @Req() req: Request,
-    @Res({ passthrough: true }) res: Response,
+  constructor(
+    @Inject(AUTH) auth: Auth,
+    private readonly signups: SignupLimiter,
   ) {
-    setCookie(res, await this.auth.register(dto, req.ip ?? 'unknown'));
-    return { ok: true };
+    this.handler = toNodeHandler(auth);
   }
 
   @Public()
-  @Post('login')
-  @HttpCode(200)
-  @Throttle({ default: { limit: 10, ttl: 60_000 } })
-  async login(
-    @Body() dto: LoginDto,
-    @Res({ passthrough: true }) res: Response,
-  ) {
-    setCookie(res, await this.auth.login(dto));
-    return { ok: true };
-  }
+  @All('*path')
+  async handle(@Req() req: Request, @Res() res: Response) {
+    const isSignUp =
+      req.method === 'POST' && req.path === '/auth/sign-up/email';
+    if (!isSignUp) return this.handler(req, res);
 
-  @Public()
-  @Post('logout')
-  @HttpCode(200)
-  async logout(@Req() req: Request, @Res({ passthrough: true }) res: Response) {
-    await this.auth.logout(req.cookies?.[AUTH_COOKIE]);
-    res.clearCookie(AUTH_COOKIE, cookieOptions());
-    return { ok: true };
+    // Per-IP daily cap on new accounts; the slot is returned if sign-up fails.
+    const ip = req.ip ?? 'unknown';
+    await this.signups.take(ip);
+    try {
+      await this.handler(req, res);
+    } catch (e) {
+      await this.signups.release(ip);
+      throw e;
+    }
+    if (res.statusCode >= 400) await this.signups.release(ip);
   }
-}
-
-function setCookie(res: Response, token: string) {
-  res.cookie(AUTH_COOKIE, token, {
-    ...cookieOptions(),
-    maxAge: TOKEN_TTL_SECONDS * 1000,
-  });
 }

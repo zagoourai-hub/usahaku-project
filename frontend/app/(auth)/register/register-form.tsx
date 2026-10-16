@@ -35,17 +35,29 @@ export function RegisterForm() {
       return;
     }
     try {
-      await api("/auth/register", { method: "POST", body: JSON.stringify({ ...values, turnstileToken: captcha ?? undefined }) });
+      await api("/auth/sign-up/email", {
+        method: "POST",
+        body: JSON.stringify(values),
+        headers: captcha ? { "x-captcha-response": captcha } : {},
+      });
       router.replace("/onboarding");
     } catch (err) {
       // Turnstile tokens are single-use: ask for a fresh one before retrying.
       setCaptcha(null);
       setCaptchaReset((n) => n + 1);
-      if (err instanceof ApiError && err.status === 409) {
+      if (err instanceof ApiError && err.status === 422) {
         setError("email", { message: "Email ini sudah terdaftar. Silakan masuk." });
         return;
       }
-      setError("root", { message: err instanceof ApiError ? err.message : "Terjadi kesalahan. Coba lagi sebentar." });
+      const message =
+        err instanceof ApiError && err.status === 403
+          ? "Verifikasi keamanan gagal. Muat ulang halaman lalu coba lagi."
+          : err instanceof ApiError && err.status === 429
+            ? "Terlalu banyak pendaftaran dari jaringan ini. Coba lagi nanti."
+            : err instanceof ApiError
+              ? err.message
+              : "Terjadi kesalahan. Coba lagi sebentar.";
+      setError("root", { message });
     }
   });
 

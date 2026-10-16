@@ -1,6 +1,6 @@
 # Run from repo root.
 #   Infra only (dev):   docker compose -f docker/docker-compose.yml up -d   (postgres, redis, s3)
-#   Full stack images:  JWT_SECRET=... docker compose -f docker/docker-compose.yml --profile app up -d --build
+#   Full stack images:  BETTER_AUTH_SECRET=... docker compose -f docker/docker-compose.yml --profile app up -d --build
 services:
   postgres:
     image: postgres:16-alpine
@@ -43,7 +43,8 @@ services:
       dockerfile: ../docker/backend/Dockerfile
     environment:
       DATABASE_URL: postgresql://${POSTGRES_USER:-hppku}:${POSTGRES_PASSWORD:-hppku}@postgres:5432/${POSTGRES_DB:-hppku}?schema=public
-      JWT_SECRET: ${JWT_SECRET:-} # app refuses to boot if < 32 chars
+      BETTER_AUTH_SECRET: ${BETTER_AUTH_SECRET:-} # app refuses to boot if < 32 chars
+      BETTER_AUTH_URL: ${BETTER_AUTH_URL:-http://localhost:4000} # public URL of this backend
       FRONTEND_ORIGIN: ${FRONTEND_ORIGIN:-http://localhost:3000}
       REDIS_URL: redis://redis:6379
       TURNSTILE_SECRET_KEY: ${TURNSTILE_SECRET_KEY:-}

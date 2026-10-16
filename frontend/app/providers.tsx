@@ -8,7 +8,7 @@ import { api, ApiError } from "@/lib/api-client";
 // bounce /login straight back to /dashboard.
 async function onError(error: unknown) {
   if (!(error instanceof ApiError) || error.status !== 401) return;
-  await api("/auth/logout", { method: "POST" }).catch(() => undefined);
+  await api("/auth/sign-out", { method: "POST", body: "{}" }).catch(() => undefined);
   window.location.replace("/login");
 }
 
