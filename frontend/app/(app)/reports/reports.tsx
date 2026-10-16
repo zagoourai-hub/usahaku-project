@@ -5,12 +5,12 @@ import { useMutation, useQuery } from "@tanstack/react-query";
 import { FileDown, FileSpreadsheet, Loader2, Lock } from "lucide-react";
 import { api, ApiError, download } from "@/lib/api-client";
 import { daysAgo, formatIDR, toISODate } from "@/lib/format";
+import { useSubscription } from "@/lib/subscription";
 import { EmptyState, ErrorBox, ghostBtn, ListSkeleton, PageHeader } from "../ui";
 
 // Mirrors ReportService.profitLoss (backend/src/report/report.service.ts).
 type Line = { category: string; amount: string };
 type ProfitLoss = { businessName: string; from: string; to: string; income: Line[]; expense: Line[]; totalIncome: string; totalExpense: string; netProfit: string };
-type SubscriptionMe = { effectiveTier: "FREE" | "PRO"; limits: { excelExport: boolean } };
 
 function presets(today = new Date()) {
   const y = today.getFullYear();
@@ -32,7 +32,7 @@ export function Reports() {
   const qs = `from=${range.from}&to=${range.to}`;
 
   const report = useQuery({ queryKey: ["reports", "profit-loss", qs], queryFn: () => api<ProfitLoss>(`/reports/profit-loss?${qs}`), enabled: valid });
-  const sub = useQuery({ queryKey: ["subscription"], queryFn: () => api<SubscriptionMe>("/subscription/me") });
+  const sub = useSubscription();
   const exporter = useMutation({
     mutationFn: (format: "pdf" | "xlsx") => download(`/reports/export?${qs}&format=${format}`, `laba-rugi_${range.from}_${range.to}.${format}`),
   });

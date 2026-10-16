@@ -28,6 +28,7 @@ import { daysAgo, formatIDR, formatPct, toISODate } from "@/lib/format";
 import { HEALTH_STYLE, marginHealth, marginPct, recipesKey, useRecipeSales, type Recipe } from "@/lib/recipes";
 import { shortDate, timeOf, transactionsKey, type TransactionPage } from "@/lib/transactions";
 import { ErrorBox, ghostBtn, primaryBtn } from "../ui";
+import { UsageMeter } from "../usage-meter";
 
 // Mirrors ReportService.summary (Decimal -> string in JSON).
 type Granularity = "day" | "week" | "month";
@@ -313,6 +314,8 @@ export function Dashboard() {
       </div>
 
       <TopMenu />
+
+      <UsageMeter />
     </main>
   );
 }

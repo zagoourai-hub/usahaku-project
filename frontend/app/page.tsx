@@ -10,6 +10,7 @@ import {
   User,
   Wallet,
 } from "lucide-react";
+import { plans } from "@/lib/plans";
 import { Logo } from "./_components/logo";
 import { HppSimulator } from "./_components/hpp-simulator";
 import { ThemeToggle } from "./_components/theme-toggle";
@@ -29,27 +30,6 @@ const features = [
   { Icon: Wallet, tone: "amber", title: "Pantau Kas Harian", text: "Catat pemasukan dan pengeluaran harian dalam hitungan detik. Pantau apakah tokomu hari ini untung atau tekor." },
   { Icon: ChartColumn, tone: "teal", title: "Laporan Laba Rugi", text: "Laporan otomatis tersusun rapi tanpa rumus Excel. Tinggal export PDF atau Excel kapan saja untuk evaluasi usaha." },
 ] as const;
-
-const plans = [
-  {
-    name: "Gratis",
-    price: "Rp 0",
-    period: "/selamanya",
-    desc: "Buat kamu yang baru mulai rapiin catatan usaha",
-    items: ["10x Scan Struk/bulan", "Hitung HPP tanpa batas resep", "Catat kas manual", "1 pengguna"],
-    cta: "Mulai Gratis",
-    featured: false,
-  },
-  {
-    name: "Pro",
-    price: "Rp 49.000",
-    period: "/bulan",
-    desc: "Buat usaha yang mau auto-pilot soal keuangan",
-    items: ["Semua fitur Gratis", "Scan Struk tanpa batas", "Laporan Laba Rugi otomatis + export", "Saran harga jual dari AI", "Sampai 3 pengguna tim", "Backup otomatis ke Cloud"],
-    cta: "Coba Pro 14 Hari Gratis",
-    featured: true,
-  },
-];
 
 const footerCols = [
   { title: "Produk", links: [{ href: "#fitur", label: "Fitur" }, { href: "#simulasi", label: "Simulasi HPP" }, { href: "#harga", label: "Harga" }] },

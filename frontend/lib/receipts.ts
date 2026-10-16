@@ -1,6 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { api, API_URL } from "./api-client";
 import type { PurchaseUnit, UsageUnit } from "./ingredients";
+import { subscriptionKey, type SubscriptionSummary } from "./subscription";
 
 // Mirrors OcrService.get (backend/src/ocr/ocr.service.ts). Decimals arrive as strings.
 export type ReceiptStatus = "PENDING" | "PROCESSING" | "DONE" | "FAILED" | "CONFIRMED";
@@ -39,15 +40,7 @@ export function useReceiptScan(id: string) {
   });
 }
 
-type SubscriptionSummary = {
-  effectiveTier: "FREE" | "PRO";
-  limits: { ocrPerMonth: number | null };
-  usage: { ocr: number };
-};
-
 export type OcrQuota = { used: number; limit: number | null; tier: "FREE" | "PRO" };
-
-export const subscriptionKey = ["subscription", "me"] as const;
 
 /** OCR usage this month from GET /subscription/me. limit null = unlimited. */
 export function useOcrQuota() {
