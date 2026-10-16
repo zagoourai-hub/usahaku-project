@@ -128,8 +128,15 @@ export function createAuth(prisma: PrismaService, mail: MailService) {
     hooks: {
       // Cheap checks before the (expensive) password hash and user insert.
       before: createAuthMiddleware(async (ctx) => {
-        if (ctx.path !== '/sign-up/email') return;
         const body = (ctx.body ?? {}) as Record<string, unknown>;
+        // Better Auth only checks the email's shape; cap it like RFC 5321 (254)
+        // on every endpoint that takes one, so no giant strings reach the DB.
+        if (typeof body.email === 'string' && body.email.length > 254) {
+          throw new APIError('BAD_REQUEST', {
+            message: 'Email terlalu panjang',
+          });
+        }
+        if (ctx.path !== '/sign-up/email') return;
         const email = str(body.email);
         if (isDisposableEmail(email)) {
           throw new APIError('BAD_REQUEST', {
