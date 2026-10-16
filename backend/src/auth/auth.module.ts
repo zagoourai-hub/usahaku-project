@@ -1,9 +1,10 @@
 import { Module } from '@nestjs/common';
 import { APP_GUARD } from '@nestjs/core';
 import { JwtModule } from '@nestjs/jwt';
-import { ThrottlerModule } from '@nestjs/throttler';
+import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
 import { AuthController } from './auth.controller.js';
 import { JwtAuthGuard, TokenDenylist } from './auth.guard.js';
+import { RedisThrottlerStorage, SignupLimiter } from './rate-limit.js';
 import { AuthService, TOKEN_TTL_SECONDS } from './auth.service.js';
 
 @Module({
@@ -21,13 +22,22 @@ import { AuthService, TOKEN_TTL_SECONDS } from './auth.service.js';
         };
       },
     }),
-    // Only applied where ThrottlerGuard is used (public auth routes).
-    ThrottlerModule.forRoot([{ ttl: 60_000, limit: 10 }]),
+    // Global per-IP cap for every route; auth/AI/upload routes tighten it
+    // with @Throttle. Counters live in Redis (see RedisThrottlerStorage).
+    ThrottlerModule.forRootAsync({
+      useFactory: () => ({
+        throttlers: [{ ttl: 60_000, limit: 120 }],
+        storage: new RedisThrottlerStorage(),
+      }),
+    }),
   ],
   controllers: [AuthController],
   providers: [
     AuthService,
     TokenDenylist,
+    SignupLimiter,
+    // Throttle first so unauthenticated floods are cut before JWT checks.
+    { provide: APP_GUARD, useClass: ThrottlerGuard },
     { provide: APP_GUARD, useClass: JwtAuthGuard },
   ],
 })

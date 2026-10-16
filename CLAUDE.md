@@ -37,6 +37,7 @@ Profile: `saas-web-no-ai` · Pasangan: `AGENTS.md`
 
 - Backend ESM: import relatif pakai ekstensi `.js`.
 - Auth butuh Redis: logout memasukkan token ke daftar blokir (`TokenDenylist` di `auth.guard.ts`). Kalau Redis mati, request yang butuh login gagal (sengaja ditolak, bukan dibiarkan lolos). Deploy di belakang Coolify/Traefik: set `TRUST_PROXY_HOPS=1` agar rate limit melihat IP asli.
+- Anti multi-akun & IP limit: `ThrottlerGuard` global (120/menit/IP, counter di Redis via `RedisThrottlerStorage`), endpoint auth/upload/export/AI lebih ketat lewat `@Throttle`. Register: `emailCanonical` unik (dot gmail & `+tag` dilipat), domain email sekali-pakai ditolak, maks `MAX_SIGNUPS_PER_IP_PER_DAY` (default 3) akun baru per IP/hari (`SignupLimiter`, IPv6 per /64). Test e2e mem-bypass lewat override `ThrottlerStorage` + `SignupLimiter`.
 - Update DTO: pakai `PartialType(X, NOT_NULL)` / `IsOptionalNotNull` (`dto.decorators.ts`) agar `null` ke kolom wajib jadi 400, bukan 500.
 - Prisma client di `src/generated/prisma`, koneksi via `@prisma/adapter-pg`.
 - Infra dev: `docker compose -f docker/docker-compose.yml up -d` (dari root) → postgres, redis, s3 (SeaweedFS); tambah `--profile app --build` + `JWT_SECRET` untuk jalankan image backend. Env backend: `backend/.env.example`.

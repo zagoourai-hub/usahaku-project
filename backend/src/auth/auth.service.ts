@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   ConflictException,
   Injectable,
   UnauthorizedException,
@@ -9,6 +10,8 @@ import { Prisma } from '../generated/prisma/client.js';
 import { PrismaService } from '../prisma/prisma.service.js';
 import { type AuthPayload, TokenDenylist } from './auth.guard.js';
 import type { LoginDto, RegisterDto } from './auth.dto.js';
+import { canonicalEmail, isDisposableEmail } from './email.js';
+import { SignupLimiter } from './rate-limit.js';
 
 export const TOKEN_TTL_SECONDS = 7 * 24 * 60 * 60;
 
@@ -31,14 +34,22 @@ export class AuthService {
     private readonly prisma: PrismaService,
     private readonly jwt: JwtService,
     private readonly denylist: TokenDenylist,
+    private readonly signups: SignupLimiter,
   ) {}
 
-  async register(dto: RegisterDto) {
+  async register(dto: RegisterDto, ip: string) {
+    if (isDisposableEmail(dto.email)) {
+      throw new BadRequestException(
+        'Pakai email aktif milik Anda, email sementara tidak diterima',
+      );
+    }
     const passwordHash = await argon2.hash(dto.password);
+    await this.signups.take(ip);
     try {
       const user = await this.prisma.user.create({
         data: {
           email: dto.email,
+          emailCanonical: canonicalEmail(dto.email),
           name: dto.name,
           passwordHash,
           subscription: { create: {} }, // FREE / ACTIVE by default
@@ -59,6 +70,7 @@ export class AuthService {
       // business is created in the same nested write, never null here
       return this.issue(user.id, user.business!.id);
     } catch (e) {
+      await this.signups.release(ip);
       if (
         e instanceof Prisma.PrismaClientKnownRequestError &&
         e.code === 'P2002'

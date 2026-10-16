@@ -2,11 +2,12 @@ import { randomUUID } from 'node:crypto';
 import { existsSync } from 'node:fs';
 import { INestApplication, ServiceUnavailableException } from '@nestjs/common';
 import { Test } from '@nestjs/testing';
-import { ThrottlerGuard } from '@nestjs/throttler';
+import { ThrottlerStorage } from '@nestjs/throttler';
 import request from 'supertest';
 import type TestAgent from 'supertest/lib/agent.js';
 import { AiService } from '../src/ai/ai.service.js';
 import { AppModule, configureApp } from '../src/app.module.js';
+import { SignupLimiter } from '../src/auth/rate-limit.js';
 import { PrismaService } from '../src/prisma/prisma.service.js';
 import { currentPeriod } from '../src/subscription/subscription.module.js';
 
@@ -43,8 +44,17 @@ describe('UsahaKu API (e2e)', () => {
     if (existsSync('.env')) process.loadEnvFile();
     // Throttling is covered by its own app below; disable it for the rest.
     const mod = await Test.createTestingModule({ imports: [AppModule] })
-      .overrideGuard(ThrottlerGuard)
-      .useValue({ canActivate: () => true })
+      .overrideProvider(ThrottlerStorage)
+      .useValue({
+        increment: async () => ({
+          totalHits: 1,
+          timeToExpire: 0,
+          isBlocked: false,
+          timeToBlockExpire: 0,
+        }),
+      })
+      .overrideProvider(SignupLimiter)
+      .useValue({ take: async () => undefined, release: async () => undefined })
       .overrideProvider(AiService)
       .useValue(ai)
       .compile();
@@ -922,6 +932,66 @@ describe('UsahaKu API (e2e)', () => {
       expect(
         (await agent.get('/subscription/me')).body.usage.aiSuggestions,
       ).toBe(0);
+    });
+  });
+
+  describe('anti multi-account', () => {
+    const signup = (
+      server: ReturnType<INestApplication['getHttpServer']>,
+      email: string,
+      ip?: string,
+    ) => {
+      const req = request(server).post('/auth/register');
+      if (ip) req.set('X-Forwarded-For', ip);
+      return req.send({ name: 'M', email, password: 'rahasia123' });
+    };
+
+    it('treats gmail dots and +tags as the same mailbox', async () => {
+      const base = `m${randomUUID().replaceAll('-', '').slice(0, 12)}`;
+      const server = app.getHttpServer();
+      await signup(server, `${base}@gmail.com`).expect(201);
+      await signup(
+        server,
+        `${base.slice(0, 5)}.${base.slice(5)}@gmail.com`,
+      ).expect(409);
+      await signup(server, `${base}+promo@gmail.com`).expect(409);
+      await signup(server, `${base}@googlemail.com`).expect(409);
+    });
+
+    it('rejects disposable email domains', async () => {
+      await signup(
+        app.getHttpServer(),
+        `x-${randomUUID()}@mailinator.com`,
+      ).expect(400);
+    });
+
+    it('caps new accounts per IP per day, and frees the slot on failure', async () => {
+      process.env.MAX_SIGNUPS_PER_IP_PER_DAY = '2';
+      const mod = await Test.createTestingModule({
+        imports: [AppModule],
+      }).compile();
+      const capped = mod.createNestApplication();
+      configureApp(capped);
+      capped.getHttpAdapter().getInstance().set('trust proxy', 1);
+      await capped.init();
+      delete process.env.MAX_SIGNUPS_PER_IP_PER_DAY;
+      const server = capped.getHttpServer();
+      // Random per run: the counters live in Redis for a day.
+      const randomIp = (net: string) =>
+        `${net}.${Math.floor(Math.random() * 250) + 1}`;
+      const ip = randomIp('203.0.113');
+      const dup = `dup-${randomUUID()}@test.local`;
+      await signup(server, dup, ip).expect(201);
+      await signup(server, dup, ip).expect(409); // failed: must not use a slot
+      await signup(server, `b-${randomUUID()}@test.local`, ip).expect(201);
+      await signup(server, `c-${randomUUID()}@test.local`, ip).expect(429);
+      // another IP is unaffected
+      await signup(
+        server,
+        `d-${randomUUID()}@test.local`,
+        randomIp('198.51.100'),
+      ).expect(201);
+      await capped.close();
     });
   });
 

@@ -1,13 +1,5 @@
-import {
-  Body,
-  Controller,
-  HttpCode,
-  Post,
-  Req,
-  Res,
-  UseGuards,
-} from '@nestjs/common';
-import { Throttle, ThrottlerGuard } from '@nestjs/throttler';
+import { Body, Controller, HttpCode, Post, Req, Res } from '@nestjs/common';
+import { Throttle } from '@nestjs/throttler';
 import type { CookieOptions, Request, Response } from 'express';
 import { AUTH_COOKIE, Public } from './auth.guard.js';
 import { LoginDto, RegisterDto } from './auth.dto.js';
@@ -21,7 +13,6 @@ const cookieOptions = (): CookieOptions => ({
 });
 
 @Controller('auth')
-@UseGuards(ThrottlerGuard)
 export class AuthController {
   constructor(private readonly auth: AuthService) {}
 
@@ -30,9 +21,10 @@ export class AuthController {
   @Throttle({ default: { limit: 5, ttl: 60_000 } })
   async register(
     @Body() dto: RegisterDto,
+    @Req() req: Request,
     @Res({ passthrough: true }) res: Response,
   ) {
-    setCookie(res, await this.auth.register(dto));
+    setCookie(res, await this.auth.register(dto, req.ip ?? 'unknown'));
     return { ok: true };
   }
 
