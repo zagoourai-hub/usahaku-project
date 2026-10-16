@@ -32,6 +32,12 @@ export class RegisterDto {
   @IsString()
   @Length(1, 100)
   businessName?: string;
+
+  // Cloudflare Turnstile token; required only when TURNSTILE_SECRET_KEY is set
+  @IsOptional()
+  @IsString()
+  @MaxLength(2048)
+  turnstileToken?: string;
 }
 
 export class LoginDto {

@@ -965,6 +965,58 @@ describe('UsahaKu API (e2e)', () => {
       ).expect(400);
     });
 
+    it('requires a valid Turnstile token when a secret is configured', async () => {
+      process.env.TURNSTILE_SECRET_KEY = 'test-secret';
+      const mod = await Test.createTestingModule({ imports: [AppModule] })
+        .overrideProvider(ThrottlerStorage)
+        .useValue({
+          increment: async () => ({
+            totalHits: 1,
+            timeToExpire: 0,
+            isBlocked: false,
+            timeToBlockExpire: 0,
+          }),
+        })
+        .overrideProvider(SignupLimiter)
+        .useValue({
+          take: async () => undefined,
+          release: async () => undefined,
+        })
+        .compile();
+      delete process.env.TURNSTILE_SECRET_KEY;
+      const guarded = mod.createNestApplication();
+      configureApp(guarded);
+      await guarded.init();
+      const verify = vi
+        .spyOn(globalThis, 'fetch')
+        .mockImplementation(async (_url, init) => {
+          const body = init?.body as URLSearchParams;
+          return Response.json({ success: body.get('response') === 'good' });
+        });
+      const server = guarded.getHttpServer();
+      const email = () => `ts-${randomUUID()}@test.local`;
+      const post = (turnstileToken?: string) =>
+        request(server)
+          .post('/auth/register')
+          .send({
+            name: 'T',
+            email: email(),
+            password: 'rahasia123',
+            turnstileToken,
+          });
+      try {
+        await post().expect(400); // missing token, verifier never called
+        expect(verify).not.toHaveBeenCalled();
+        await post('bad').expect(400);
+        await post('good').expect(201);
+        verify.mockRejectedValueOnce(new Error('network down'));
+        await post('good').expect(503); // fails closed
+      } finally {
+        verify.mockRestore();
+        await guarded.close();
+      }
+    });
+
     it('caps new accounts per IP per day, and frees the slot on failure', async () => {
       process.env.MAX_SIGNUPS_PER_IP_PER_DAY = '2';
       const mod = await Test.createTestingModule({

@@ -3,7 +3,8 @@ name: Deploy
 # Runs after CI passes on main: build + push images to GHCR, then ask Coolify
 # to redeploy. Setup (repo settings):
 #   secrets: COOLIFY_TOKEN, COOLIFY_WEBHOOK_BACKEND, COOLIFY_WEBHOOK_FRONTEND
-#   vars:    NEXT_PUBLIC_API_URL (public backend URL, baked into the frontend)
+#   vars:    NEXT_PUBLIC_API_URL (public backend URL, baked into the frontend),
+#            NEXT_PUBLIC_TURNSTILE_SITE_KEY (public Turnstile site key)
 on:
   workflow_run:
     workflows: [CI]
@@ -44,6 +45,7 @@ jobs:
           push: true
           build-args: |
             NEXT_PUBLIC_API_URL=${{ vars.NEXT_PUBLIC_API_URL }}
+            NEXT_PUBLIC_TURNSTILE_SITE_KEY=${{ vars.NEXT_PUBLIC_TURNSTILE_SITE_KEY }}
           tags: |
             ${{ steps.image.outputs.name }}:latest
             ${{ steps.image.outputs.name }}:${{ github.event.workflow_run.head_sha }}

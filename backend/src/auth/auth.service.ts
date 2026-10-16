@@ -12,6 +12,7 @@ import { type AuthPayload, TokenDenylist } from './auth.guard.js';
 import type { LoginDto, RegisterDto } from './auth.dto.js';
 import { canonicalEmail, isDisposableEmail } from './email.js';
 import { SignupLimiter } from './rate-limit.js';
+import { TurnstileService } from './turnstile.js';
 
 export const TOKEN_TTL_SECONDS = 7 * 24 * 60 * 60;
 
@@ -35,6 +36,7 @@ export class AuthService {
     private readonly jwt: JwtService,
     private readonly denylist: TokenDenylist,
     private readonly signups: SignupLimiter,
+    private readonly turnstile: TurnstileService,
   ) {}
 
   async register(dto: RegisterDto, ip: string) {
@@ -43,6 +45,8 @@ export class AuthService {
         'Pakai email aktif milik Anda, email sementara tidak diterima',
       );
     }
+    // Bot check first: rejected bots must not eat the IP's signup quota.
+    await this.turnstile.verify(dto.turnstileToken, ip);
     const passwordHash = await argon2.hash(dto.password);
     await this.signups.take(ip);
     try {

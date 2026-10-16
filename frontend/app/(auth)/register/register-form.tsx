@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -7,6 +8,7 @@ import { z } from "zod";
 import { ArrowRight, Loader2 } from "lucide-react";
 import { api, ApiError } from "@/lib/api-client";
 import { Field, FormError, PasswordField, SubmitButton } from "@/app/_components/fields";
+import { Turnstile, TURNSTILE_SITE_KEY } from "@/app/_components/turnstile";
 
 // Mirrors backend RegisterDto (backend/src/auth/auth.dto.ts).
 const schema = z.object({
@@ -18,6 +20,8 @@ const schema = z.object({
 
 export function RegisterForm() {
   const router = useRouter();
+  const [captcha, setCaptcha] = useState<string | null>(null);
+  const [captchaReset, setCaptchaReset] = useState(0);
   const {
     register,
     handleSubmit,
@@ -26,10 +30,17 @@ export function RegisterForm() {
   } = useForm({ resolver: zodResolver(schema) });
 
   const onSubmit = handleSubmit(async (values) => {
+    if (TURNSTILE_SITE_KEY && !captcha) {
+      setError("root", { message: "Selesaikan verifikasi keamanan di atas dulu." });
+      return;
+    }
     try {
-      await api("/auth/register", { method: "POST", body: JSON.stringify(values) });
+      await api("/auth/register", { method: "POST", body: JSON.stringify({ ...values, turnstileToken: captcha ?? undefined }) });
       router.replace("/onboarding");
     } catch (err) {
+      // Turnstile tokens are single-use: ask for a fresh one before retrying.
+      setCaptcha(null);
+      setCaptchaReset((n) => n + 1);
       if (err instanceof ApiError && err.status === 409) {
         setError("email", { message: "Email ini sudah terdaftar. Silakan masuk." });
         return;
@@ -51,6 +62,7 @@ export function RegisterForm() {
         error={errors.password?.message}
         {...register("password")}
       />
+      <Turnstile onToken={setCaptcha} resetKey={captchaReset} />
       <FormError message={errors.root?.message} />
       <SubmitButton pending={isSubmitting}>
         {isSubmitting ? <Loader2 className="size-5 animate-spin motion-reduce:animate-none" /> : null}

@@ -5,6 +5,7 @@ import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
 import { AuthController } from './auth.controller.js';
 import { JwtAuthGuard, TokenDenylist } from './auth.guard.js';
 import { RedisThrottlerStorage, SignupLimiter } from './rate-limit.js';
+import { TurnstileService } from './turnstile.js';
 import { AuthService, TOKEN_TTL_SECONDS } from './auth.service.js';
 
 @Module({
@@ -36,6 +37,7 @@ import { AuthService, TOKEN_TTL_SECONDS } from './auth.service.js';
     AuthService,
     TokenDenylist,
     SignupLimiter,
+    TurnstileService,
     // Throttle first so unauthenticated floods are cut before JWT checks.
     { provide: APP_GUARD, useClass: ThrottlerGuard },
     { provide: APP_GUARD, useClass: JwtAuthGuard },
