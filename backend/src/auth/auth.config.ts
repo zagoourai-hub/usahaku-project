@@ -9,6 +9,15 @@ import { canonicalEmail, isDisposableEmail } from './email.js';
 
 export const SESSION_TTL_SECONDS = 7 * 24 * 60 * 60;
 
+// Newest sessions kept per user; older ones are dropped at sign-in so one
+// account cannot grow the Session table without bound.
+const MAX_SESSIONS_PER_USER = 10;
+
+// OWASP minimum for argon2id (19 MiB, t=2, p=1). The default (64 MiB x 4 lanes)
+// peaks at ~65 MiB per hash; with 4 libuv threads a login burst cost +260 MB RSS.
+// Hashes created with other params still verify: params are stored in the hash.
+const ARGON2_OPTIONS = { memoryCost: 19456, timeCost: 2, parallelism: 1 };
+
 export const DEFAULT_CATEGORIES = [
   { name: 'Penjualan', type: 'INCOME' },
   { name: 'Belanja Bahan', type: 'EXPENSE' },
@@ -58,7 +67,7 @@ export function createAuth(prisma: PrismaService) {
       maxPasswordLength: 128, // argon2 would hash huge payloads otherwise
       // argon2id like before, so hashes of existing accounts keep verifying.
       password: {
-        hash: (password) => argon2.hash(password),
+        hash: (password) => argon2.hash(password, ARGON2_OPTIONS),
         verify: ({ hash, password }) => argon2.verify(hash, password),
       },
     },
@@ -114,6 +123,23 @@ export function createAuth(prisma: PrismaService) {
       }),
     },
     databaseHooks: {
+      session: {
+        create: {
+          after: async (session) => {
+            const stale = await prisma.session.findMany({
+              where: { userId: session.userId },
+              orderBy: { createdAt: 'desc' },
+              skip: MAX_SESSIONS_PER_USER,
+              select: { id: true },
+            });
+            if (stale.length) {
+              await prisma.session.deleteMany({
+                where: { id: { in: stale.map((s) => s.id) } },
+              });
+            }
+          },
+        },
+      },
       user: {
         create: {
           before: async (user) => ({

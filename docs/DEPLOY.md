@@ -27,7 +27,7 @@ Image GHCR bersifat privat secara default: tambahkan registry di Coolify (user G
 
 Health check: backend `GET /health` (port 4000, cek koneksi DB), frontend `GET /login` (port 3000).
 
-Backend menjalankan `prisma migrate deploy` otomatis saat start. Worker OCR berjalan di proses backend yang sama, jadi cukup satu instance.
+Backend menjalankan `prisma migrate deploy` otomatis saat start. Worker OCR dan job pembersihan (tiap 6 jam: sesi kedaluwarsa, scan gagal >7 hari, draf >30 hari, foto struk tersimpan >30 hari) berjalan di proses backend yang sama, jadi cukup satu instance. Aplikasi menutup worker dan koneksi dengan rapi saat menerima SIGTERM (redeploy).
 
 ## 3. Environment backend
 
@@ -45,6 +45,7 @@ Backend menjalankan `prisma migrate deploy` otomatis saat start. Worker OCR berj
 | `OPENROUTER_API_KEY`, `OPENROUTER_MODEL` | untuk fitur AI | kosong = fitur AI mengembalikan 503 |
 | `AI_DAILY_CALL_CAP` | opsional | default 1000 panggilan AI per hari, 0 = tanpa batas |
 | `MAX_SIGNUPS_PER_IP_PER_DAY` | opsional | default 3 |
+| `DB_POOL_MAX` | opsional | ukuran pool Postgres per instance, default 10 |
 
 Backend menolak start di production bila `BETTER_AUTH_SECRET`, `BETTER_AUTH_URL`, atau `FRONTEND_ORIGIN` kosong.
 

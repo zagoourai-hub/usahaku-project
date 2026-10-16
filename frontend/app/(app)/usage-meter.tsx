@@ -8,6 +8,7 @@ type Row = { key: string; label: string; used: number; limit: number | null };
 function rows(s: SubscriptionSummary): Row[] {
   return [
     { key: "recipes", label: "Resep", used: s.usage.recipes, limit: s.limits.recipes },
+    { key: "ingredients", label: "Bahan baku", used: s.usage.ingredients, limit: s.limits.ingredients },
     { key: "tx", label: "Catatan kas bulan ini", used: s.usage.transactions, limit: s.limits.transactionsPerMonth },
     { key: "ocr", label: "Scan struk bulan ini", used: s.usage.ocr, limit: s.limits.ocrPerMonth },
     { key: "ai", label: "Saran harga AI bulan ini", used: s.usage.aiSuggestions, limit: s.limits.aiSuggestionsPerMonth },

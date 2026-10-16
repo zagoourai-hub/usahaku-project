@@ -91,5 +91,6 @@ export class OcrController {
   ],
   controllers: [OcrController],
   providers: [OcrService, OcrProcessor, StorageService],
+  exports: [StorageService],
 })
 export class OcrModule {}

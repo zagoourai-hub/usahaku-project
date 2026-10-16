@@ -11,7 +11,7 @@ Sumber: `docs/PRD.md` · Desain: `design/` (Stitch export) · Last Updated: 2026
 | 2 Finance | 23 | 23 | 0 | 0 | 0 | 0 |
 | 3 Reporting, Tier & Deploy | 21 | 19 | 0 | 1 | 1 | 0 |
 | 4 Integrasi Backend | 9 | 9 | 0 | 0 | 0 | 0 |
-| 5 Auth & Anti-Abuse | 9 | 8 | 0 | 0 | 1 | 0 |
+| 5 Auth & Anti-Abuse | 10 | 9 | 0 | 0 | 1 | 0 |
 
 ## Arsitektur
 
@@ -168,3 +168,4 @@ Selesai 2026-09-27: semua data dummy `frontend/lib/mock.ts` diganti endpoint asl
 | A-07 | 5 | BE | todo | Reset sandi, verifikasi email, login Google (plugin Better Auth) | A-05 | | Butuh pengirim email (Resend/SMTP) dan key OAuth |
 | A-08 | 5 | OPS | completed | Cookie lintas subdomain di production (`crossSubDomainCookies`) atau FE+API satu domain | A-05 | e2e: `Set-Cookie` memuat `Domain=.usahaku.test` saat `COOKIE_DOMAIN` diisi; backend production gagal start tanpa `BETTER_AUTH_URL`/`FRONTEND_ORIGIN` | Env `COOKIE_DOMAIN` → `crossSubDomainCookies` Better Auth. Kosong = cookie host-only (dev). Belum diuji di domain asli |
 | A-09 | 5 | BE | completed | Pengaman biaya AI: batas panggilan global harian (`AI_DAILY_CALL_CAP`), `maxRetries: 0`, `maxOutputTokens`, log pemakaian token | 2-16 | e2e `caps AI provider calls per day app-wide` (503; 0 = tanpa batas); pnpm lint/typecheck hijau; e2e 35/40 (5 gagal = S3 tidak jalan) | OCR maks 2 panggilan/scan (BullMQ), saran harga 1 panggilan. Token dicatat di log, belum per akun. Belum diuji dengan OpenRouter asli |
+| A-10 | 5 | BE+FE | completed | Pengaman pertumbuhan & stabilitas: batas bahan/kategori per paket, sesi maks 10/user, argon2 param OWASP, job pembersihan (sesi, scan, foto struk), pool DB + statement timeout, graceful shutdown, keep-alive proxy | A-05 | e2e: 402 batas bahan/kategori (+PRO lebih longgar), sesi ≤10, purge (foto gagal dihapus → baris dipertahankan), foto kosong → 404/`imageUrl` null; argon2: 12 hash paralel puncak memori 309 → 129 MB, 769 → 152 ms; lint/typecheck BE+FE hijau | Batas 200/1000 bahan dan 30/100 kategori adalah tebakan awal. Foto struk terkonfirmasi dihapus setelah 30 hari (data tetap). Belum diuji dengan S3 asli |

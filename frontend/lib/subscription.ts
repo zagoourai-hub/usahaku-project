@@ -9,12 +9,14 @@ export type SubscriptionSummary = {
   subscription: { tier: Tier; status: string; expiresAt: string | null } | null;
   limits: {
     recipes: number | null;
+    ingredients: number | null;
+    categories: number | null;
     transactionsPerMonth: number | null;
     ocrPerMonth: number | null;
     aiSuggestionsPerMonth: number | null;
     excelExport: boolean;
   };
-  usage: { period: string; recipes: number; transactions: number; ocr: number; aiSuggestions: number };
+  usage: { period: string; recipes: number; ingredients: number; categories: number; transactions: number; ocr: number; aiSuggestions: number };
 };
 
 export const subscriptionKey = ["subscription", "me"] as const;

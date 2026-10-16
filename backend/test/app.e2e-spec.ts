@@ -8,6 +8,8 @@ import type TestAgent from 'supertest/lib/agent.js';
 import { AiBudget, AiService } from '../src/ai/ai.service.js';
 import { AppModule, configureApp } from '../src/app.module.js';
 import { SignupLimiter } from '../src/auth/rate-limit.js';
+import { MaintenanceService } from '../src/maintenance/maintenance.module.js';
+import { StorageService } from '../src/ocr/storage.service.js';
 import { PrismaService } from '../src/prisma/prisma.service.js';
 import { currentPeriod } from '../src/subscription/subscription.module.js';
 
@@ -1170,6 +1172,166 @@ describe('UsahaKu API (e2e)', () => {
     }
     await throttled.close();
     expect(codes).toContain(429);
+  });
+
+  describe('growth limits and cleanup', () => {
+    it('caps ingredients and categories per plan (402), PRO gets more room', async () => {
+      const agent = await register();
+      const me = (await agent.get('/business/me')).body as { id: string };
+      await prisma.ingredient.createMany({
+        data: Array.from({ length: 200 }, (_, i) => ({
+          businessId: me.id,
+          name: `Bahan ${i}`,
+          purchaseUnit: 'kg' as const,
+          purchaseQty: 1,
+          usageUnit: 'gram' as const,
+          purchasePrice: 1000,
+          pricePerUsageUnit: 1,
+        })),
+      });
+      const ingredient = {
+        name: 'Satu lagi',
+        purchaseUnit: 'kg',
+        purchaseQty: 1,
+        usageUnit: 'gram',
+        purchasePrice: 1000,
+      };
+      const res = await agent.post('/ingredients').send(ingredient).expect(402);
+      expect(res.body.message).toMatch(/200 bahan baku paket FREE/);
+      const summary = (await agent.get('/subscription/me')).body;
+      expect(summary.usage.ingredients).toBe(200);
+      expect(summary.limits.ingredients).toBe(200);
+
+      await prisma.category.createMany({
+        data: Array.from({ length: 24 }, (_, i) => ({
+          businessId: me.id,
+          name: `Kategori ${i}`,
+          type: 'EXPENSE' as const,
+        })),
+      }); // 6 defaults + 24 = 30
+      await agent
+        .post('/categories')
+        .send({ name: 'Ke-31', type: 'EXPENSE' })
+        .expect(402);
+
+      await prisma.subscription.updateMany({
+        where: { user: { business: { id: me.id } } },
+        data: { tier: 'PRO' },
+      });
+      await agent.post('/ingredients').send(ingredient).expect(201);
+      await agent
+        .post('/categories')
+        .send({ name: 'Ke-31', type: 'EXPENSE' })
+        .expect(201);
+    });
+
+    it('keeps at most 10 sessions per user', async () => {
+      const email = `sess-${randomUUID()}@test.local`;
+      const server = app.getHttpServer();
+      await signUp(server, { name: 'S', email, password: 'rahasia123' }).expect(
+        200,
+      );
+      for (let i = 0; i < 12; i++) {
+        await request(server)
+          .post('/auth/sign-in/email')
+          .set('Origin', ORIGIN)
+          .send({ email, password: 'rahasia123' })
+          .expect(200);
+      }
+      const user = await prisma.user.findUniqueOrThrow({ where: { email } });
+      expect(await prisma.session.count({ where: { userId: user.id } })).toBe(
+        10,
+      );
+    });
+
+    it('purges expired sessions, stale scans and old photos', async () => {
+      const storage = app.get(StorageService, { strict: false });
+      const del = vi.spyOn(storage, 'delete').mockResolvedValue(undefined);
+      const agent = await register();
+      const me = (await agent.get('/business/me')).body as { id: string };
+      const user = await prisma.user.findFirstOrThrow({
+        where: { business: { id: me.id } },
+      });
+      const daysAgo = (n: number) => new Date(Date.now() - n * 86_400_000);
+      const scan = (status: 'FAILED' | 'DONE' | 'CONFIRMED', age: number) =>
+        prisma.receiptScan.create({
+          data: {
+            businessId: me.id,
+            imageKey: `${me.id}/${randomUUID()}`,
+            mimeType: 'image/png',
+            status,
+            rawResult: { x: 1 },
+            updatedAt: daysAgo(age),
+          },
+        });
+      const oldFailed = await scan('FAILED', 8);
+      const freshFailed = await scan('FAILED', 1);
+      const oldDraft = await scan('DONE', 31);
+      const oldConfirmed = await scan('CONFIRMED', 31);
+      const freshConfirmed = await scan('CONFIRMED', 2);
+      const expiredSession = await prisma.session.create({
+        data: {
+          userId: user.id,
+          token: randomUUID(),
+          expiresAt: daysAgo(1),
+        },
+      });
+      await prisma.verification.create({
+        data: { identifier: 'x', value: 'y', expiresAt: daysAgo(1) },
+      });
+
+      try {
+        const result = await app.get(MaintenanceService).purge();
+        expect(result.sessions).toBeGreaterThanOrEqual(1);
+        expect(result.verifications).toBeGreaterThanOrEqual(1);
+        const left = async (id: string) =>
+          prisma.receiptScan.findUnique({ where: { id } });
+        expect(await left(oldFailed.id)).toBeNull();
+        expect(await left(freshFailed.id)).not.toBeNull();
+        expect(await left(oldDraft.id)).toBeNull();
+        // saved data stays, only the photo goes
+        const purged = await left(oldConfirmed.id);
+        expect(purged).toMatchObject({ imageKey: null, rawResult: null });
+        expect((await left(freshConfirmed.id))?.imageKey).not.toBeNull();
+        expect(
+          await prisma.session.findUnique({ where: { id: expiredSession.id } }),
+        ).toBeNull();
+        // the active session still works
+        await agent.get('/business/me').expect(200);
+        expect(del).toHaveBeenCalledWith(oldFailed.imageKey);
+        expect(del).not.toHaveBeenCalledWith(freshFailed.imageKey);
+
+        // a photo that cannot be deleted keeps its row for the next run
+        const stuck = await scan('FAILED', 9);
+        del.mockRejectedValueOnce(new Error('s3 down'));
+        await app.get(MaintenanceService).purge();
+        expect(await left(stuck.id)).not.toBeNull();
+        await app.get(MaintenanceService).purge();
+        expect(await left(stuck.id)).toBeNull();
+      } finally {
+        del.mockRestore();
+      }
+    });
+
+    it('serves no photo once purged, scan data stays readable', async () => {
+      const agent = await register();
+      const me = (await agent.get('/business/me')).body as { id: string };
+      const gone = await prisma.receiptScan.create({
+        data: {
+          businessId: me.id,
+          imageKey: null,
+          mimeType: 'image/png',
+          status: 'CONFIRMED',
+          merchantName: 'Toko X',
+        },
+      });
+      const res = await agent.get(`/receipts/${gone.id}`).expect(200);
+      expect(res.body).toMatchObject({
+        merchantName: 'Toko X',
+        imageUrl: null,
+      });
+      await agent.get(`/receipts/${gone.id}/image`).expect(404);
+    });
   });
 
   it('caps AI provider calls per day app-wide (503), 0 = unlimited', async () => {

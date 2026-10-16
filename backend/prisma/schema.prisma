@@ -310,7 +310,7 @@ model ReceiptScan {
   id            String        @id @default(uuid()) @db.Uuid
   businessId    String        @db.Uuid
   business      Business      @relation(fields: [businessId], references: [id], onDelete: Cascade)
-  imageKey      String // object storage key
+  imageKey      String? // object storage key; null once the photo was purged
   mimeType      String
   status        ReceiptStatus @default(PENDING)
   rawResult     Json?

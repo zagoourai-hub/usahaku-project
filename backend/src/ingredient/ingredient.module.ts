@@ -27,6 +27,10 @@ import {
 import { PrismaService } from '../prisma/prisma.service.js';
 import { RecipeModule } from '../recipe/recipe.module.js';
 import { RecipeService } from '../recipe/recipe.service.js';
+import {
+  SubscriptionModule,
+  UsageService,
+} from '../subscription/subscription.module.js';
 import { pricePerUsageUnit } from './unit-conversion.js';
 
 export class CreateIngredientDto {
@@ -59,6 +63,7 @@ export class IngredientService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly recipes: RecipeService,
+    private readonly usage: UsageService,
   ) {}
 
   list(businessId: string, q?: string) {
@@ -93,17 +98,20 @@ export class IngredientService {
   }
 
   create(businessId: string, dto: CreateIngredientDto) {
-    return this.prisma.ingredient.create({
-      data: {
-        businessId,
-        name: dto.name,
-        purchaseUnit: dto.purchaseUnit,
-        purchaseQty: dto.purchaseQty,
-        usageUnit: dto.usageUnit,
-        purchasePrice: dto.purchasePrice,
-        pricePerUsageUnit: pricePerUsageUnit(dto),
-        priceLogs: { create: { purchasePrice: dto.purchasePrice } },
-      },
+    return this.prisma.$transaction(async (tx) => {
+      await this.usage.assertCountQuota(tx, businessId, 'ingredients');
+      return tx.ingredient.create({
+        data: {
+          businessId,
+          name: dto.name,
+          purchaseUnit: dto.purchaseUnit,
+          purchaseQty: dto.purchaseQty,
+          usageUnit: dto.usageUnit,
+          purchasePrice: dto.purchasePrice,
+          pricePerUsageUnit: pricePerUsageUnit(dto),
+          priceLogs: { create: { purchasePrice: dto.purchasePrice } },
+        },
+      });
     });
   }
 
@@ -220,7 +228,7 @@ export class IngredientController {
 }
 
 @Module({
-  imports: [RecipeModule],
+  imports: [RecipeModule, SubscriptionModule],
   controllers: [IngredientController],
   providers: [IngredientService],
   exports: [IngredientService],

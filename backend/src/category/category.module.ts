@@ -21,6 +21,10 @@ import { CurrentBusiness } from '../auth/auth.guard.js';
 import { Trim } from '../dto.decorators.js';
 import { CategoryType } from '../generated/prisma/client.js';
 import { PrismaService } from '../prisma/prisma.service.js';
+import {
+  SubscriptionModule,
+  UsageService,
+} from '../subscription/subscription.module.js';
 
 export class CreateCategoryDto {
   @Trim()
@@ -41,7 +45,10 @@ export class UpdateCategoryDto {
 
 @Injectable()
 export class CategoryService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly usage: UsageService,
+  ) {}
 
   list(businessId: string, type?: CategoryType) {
     return this.prisma.category.findMany({
@@ -51,8 +58,11 @@ export class CategoryService {
   }
 
   create(businessId: string, dto: CreateCategoryDto) {
-    return this.prisma.category.create({
-      data: { name: dto.name, type: dto.type, businessId },
+    return this.prisma.$transaction(async (tx) => {
+      await this.usage.assertCountQuota(tx, businessId, 'categories');
+      return tx.category.create({
+        data: { name: dto.name, type: dto.type, businessId },
+      });
     });
   }
 
@@ -127,5 +137,9 @@ export class CategoryController {
   }
 }
 
-@Module({ controllers: [CategoryController], providers: [CategoryService] })
+@Module({
+  imports: [SubscriptionModule],
+  controllers: [CategoryController],
+  providers: [CategoryService],
+})
 export class CategoryModule {}

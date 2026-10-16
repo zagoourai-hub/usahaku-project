@@ -8,6 +8,7 @@ import { BusinessModule } from './business/business.module.js';
 import { HealthController } from './health.controller.js';
 import { CategoryModule } from './category/category.module.js';
 import { IngredientModule } from './ingredient/ingredient.module.js';
+import { MaintenanceModule } from './maintenance/maintenance.module.js';
 import { NotificationModule } from './notification/notification.module.js';
 import { OcrModule } from './ocr/ocr.module.js';
 import { PricingModule } from './pricing/pricing.module.js';
@@ -48,6 +49,7 @@ import { TransactionModule } from './transaction/transaction.module.js';
     OcrModule,
     PricingModule,
     NotificationModule,
+    MaintenanceModule,
   ],
 })
 export class AppModule {}

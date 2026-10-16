@@ -16,6 +16,12 @@ async function bootstrap() {
   }
   configureApp(app);
   app.enableCors({ origin: process.env.FRONTEND_ORIGIN, credentials: true });
-  await app.listen(process.env.PORT ?? 4000);
+  // SIGTERM on redeploy: let Nest close the queue worker, Redis and Prisma cleanly.
+  app.enableShutdownHooks();
+  const server = await app.listen(process.env.PORT ?? 4000);
+  // Keep-alive must outlive the proxy's idle timeout (Traefik 60s), or reused
+  // connections get reset and show up as random 502s. headersTimeout must exceed it.
+  server.keepAliveTimeout = 65_000;
+  server.headersTimeout = 66_000;
 }
 await bootstrap();

@@ -22,7 +22,7 @@ export type ReceiptScan = {
   errorMessage: string | null;
   createdAt: string;
   items: ReceiptItem[];
-  imageUrl: string; // API-relative, cookie-authenticated
+  imageUrl: string | null; // API-relative, cookie-authenticated; null once the photo was purged
 };
 
 export const receiptKey = (id: string) => ["receipts", id] as const;
@@ -33,7 +33,7 @@ export function useReceiptScan(id: string) {
     queryKey: receiptKey(id),
     queryFn: async () => {
       const scan = await api<ReceiptScan>(`/receipts/${id}`);
-      return { ...scan, imageUrl: `${API_URL}${scan.imageUrl}` };
+      return { ...scan, imageUrl: scan.imageUrl ? `${API_URL}${scan.imageUrl}` : null };
     },
     refetchInterval: (q) => (q.state.data?.status === "PENDING" || q.state.data?.status === "PROCESSING" ? 1500 : false),
     retry: false,
