@@ -6,6 +6,8 @@ import { captcha } from 'better-auth/plugins';
 import * as argon2 from 'argon2';
 import type { PrismaService } from '../prisma/prisma.service.js';
 import { canonicalEmail, isDisposableEmail } from './email.js';
+import { type MailService } from './mail.service.js';
+import { resetPasswordMail, verifyEmailMail } from './mail-templates.js';
 
 export const SESSION_TTL_SECONDS = 7 * 24 * 60 * 60;
 
@@ -31,7 +33,7 @@ const isProd = () => process.env.NODE_ENV === 'production';
 
 const str = (value: unknown) => (typeof value === 'string' ? value.trim() : '');
 
-export function createAuth(prisma: PrismaService) {
+export function createAuth(prisma: PrismaService, mail: MailService) {
   const secret = process.env.BETTER_AUTH_SECRET;
   if (!secret || secret.length < 32) {
     throw new Error('BETTER_AUTH_SECRET must be set (min 32 chars)');
@@ -49,6 +51,15 @@ export function createAuth(prisma: PrismaService) {
   // Frontend and API on sibling subdomains (app.x.com / api.x.com): the session
   // cookie must be visible to both, e.g. COOKIE_DOMAIN=.x.com. Unset = host-only.
   const cookieDomain = process.env.COOKIE_DOMAIN;
+  // Email links point at the frontend (its own /verify-email and /reset-password
+  // pages call the API), so they work in every deploy mode, tunnel included.
+  const webOrigin = process.env.FRONTEND_ORIGIN || 'http://localhost:3000';
+  // Fire and forget: a slow or failing SMTP must not break the request, and
+  // the response time must not reveal whether an address is registered.
+  const sendMail = (message: Parameters<MailService['send']>[0]) =>
+    void mail.send(message).catch((e: unknown) => {
+      console.error('[mail] send failed', e instanceof Error ? e.message : e);
+    });
 
   return betterAuth({
     appName: 'UsahaKu',
@@ -66,9 +77,34 @@ export function createAuth(prisma: PrismaService) {
       minPasswordLength: 8,
       maxPasswordLength: 128, // argon2 would hash huge payloads otherwise
       // argon2id like before, so hashes of existing accounts keep verifying.
+      resetPasswordTokenExpiresIn: 60 * 60,
+      revokeSessionsOnPasswordReset: true,
+      sendResetPassword: async ({ user, token }) => {
+        sendMail(
+          resetPasswordMail(
+            user.email,
+            user.name,
+            `${webOrigin}/reset-password?token=${encodeURIComponent(token)}`,
+          ),
+        );
+      },
       password: {
         hash: (password) => argon2.hash(password, ARGON2_OPTIONS),
         verify: ({ hash, password }) => argon2.verify(hash, password),
+      },
+    },
+    emailVerification: {
+      sendOnSignUp: true,
+      autoSignInAfterVerification: true,
+      expiresIn: 60 * 60,
+      sendVerificationEmail: async ({ user, token }) => {
+        sendMail(
+          verifyEmailMail(
+            user.email,
+            user.name,
+            `${webOrigin}/verify-email?token=${encodeURIComponent(token)}`,
+          ),
+        );
       },
     },
     session: { expiresIn: SESSION_TTL_SECONDS },
@@ -180,7 +216,7 @@ export function createAuth(prisma: PrismaService) {
           captcha({
             provider: 'cloudflare-turnstile',
             secretKey: turnstileSecret,
-            endpoints: ['/sign-up/email'],
+            endpoints: ['/sign-up/email', '/request-password-reset'],
           }),
         ]
       : [],

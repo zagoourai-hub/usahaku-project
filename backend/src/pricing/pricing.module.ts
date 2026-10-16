@@ -40,6 +40,7 @@ export class PricingService {
   // failed calls don't burn quota. Concurrent requests at the edge may get 1 extra.
   async suggest(businessId: string, recipeId: string) {
     const recipe = await this.recipes.get(businessId, recipeId); // scoped, 404
+    await this.usage.assertEmailVerified(businessId);
     await this.usage.assertAvailable(businessId, 'aiSuggestion');
     const business = await this.prisma.business.findUniqueOrThrow({
       where: { id: businessId },

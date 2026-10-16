@@ -86,6 +86,7 @@ export class OcrService implements OnApplicationBootstrap {
   }
 
   async upload(businessId: string, bytes: Uint8Array) {
+    await this.usage.assertEmailVerified(businessId);
     const mimeType = sniffImage(bytes);
     if (!mimeType) {
       throw new BadRequestException('Foto harus JPG, PNG, atau WEBP');

@@ -1,5 +1,6 @@
 import {
   Controller,
+  ForbiddenException,
   Get,
   HttpException,
   HttpStatus,
@@ -102,6 +103,18 @@ export class UsageService {
     if ((await tx.recipe.count({ where: { businessId } })) >= recipes) {
       throw new QuotaExceededException(
         `Batas ${recipes} resep paket FREE tercapai. Upgrade ke PRO.`,
+      );
+    }
+  }
+
+  /** AI features need a confirmed email, so throwaway addresses can't burn the AI budget. */
+  async assertEmailVerified(businessId: string) {
+    const verified = await this.prisma.user.count({
+      where: { business: { id: businessId }, emailVerified: true },
+    });
+    if (!verified) {
+      throw new ForbiddenException(
+        'Konfirmasi email dulu untuk memakai fitur ini. Cek kotak masuk kamu.',
       );
     }
   }

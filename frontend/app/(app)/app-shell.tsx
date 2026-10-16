@@ -25,6 +25,7 @@ import {
 import { Logo } from "../_components/logo";
 import { SIDEBAR_COOKIE } from "./sidebar-cookie";
 import { ThemeToggle } from "../_components/theme-toggle";
+import { VerifyEmailBanner } from "./verify-email-banner";
 
 // `short`: label for the 6-column mobile bottom nav, where long words at 14px+ collide.
 type NavItem = { href: string; label: string; short?: string; Icon: LucideIcon };
@@ -108,6 +109,7 @@ export function AppShell({ children, defaultSidebarOpen }: { children: ReactNode
           </div>
         </header>
 
+        <VerifyEmailBanner />
         {children}
 
         {/* Bottom nav — mobile */}

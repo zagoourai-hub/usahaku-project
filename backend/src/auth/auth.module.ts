@@ -11,19 +11,20 @@ import { createAuth } from './auth.config.js';
 import { AUTH } from './auth.constants.js';
 import { AuthController } from './auth.controller.js';
 import { SessionGuard } from './auth.guard.js';
+import { MailService } from './mail.service.js';
 import { RedisThrottlerStorage, SignupLimiter } from './rate-limit.js';
 
-/** Throttler that only applies to one exact auth endpoint. */
+/** Throttler that only applies to the listed auth endpoints. */
 const onlyFor = (
   name: string,
-  path: string,
+  paths: string[],
   limit: number,
 ): ThrottlerOptions => ({
   name,
   ttl: 60_000,
   limit,
   skipIf: (ctx: ExecutionContext) =>
-    ctx.switchToHttp().getRequest<Request>().path !== path,
+    !paths.includes(ctx.switchToHttp().getRequest<Request>().path),
 });
 
 @Module({
@@ -35,8 +36,15 @@ const onlyFor = (
       useFactory: () => ({
         throttlers: [
           { name: 'default', ttl: 60_000, limit: 120 },
-          onlyFor('sign-up', '/auth/sign-up/email', 5),
-          onlyFor('sign-in', '/auth/sign-in/email', 10),
+          onlyFor('sign-up', ['/auth/sign-up/email'], 5),
+          onlyFor('sign-in', ['/auth/sign-in/email'], 10),
+          onlyFor('reset', ['/auth/reset-password'], 10),
+          // Each call sends an email: keep mail bombing of one address cheap to stop.
+          onlyFor(
+            'mail',
+            ['/auth/send-verification-email', '/auth/request-password-reset'],
+            3,
+          ),
         ],
         storage: new RedisThrottlerStorage(),
       }),
@@ -45,10 +53,12 @@ const onlyFor = (
   controllers: [AuthController],
   providers: [
     SignupLimiter,
+    MailService,
     {
       provide: AUTH,
-      inject: [PrismaService],
-      useFactory: (prisma: PrismaService) => createAuth(prisma),
+      inject: [PrismaService, MailService],
+      useFactory: (prisma: PrismaService, mail: MailService) =>
+        createAuth(prisma, mail),
     },
     // Throttle first so unauthenticated floods are cut before session lookups.
     { provide: APP_GUARD, useClass: ThrottlerGuard },

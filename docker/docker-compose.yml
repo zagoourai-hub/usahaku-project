@@ -1,5 +1,5 @@
 # Run from repo root.
-#   Infra only (dev):   docker compose -f docker/docker-compose.yml up -d   (postgres, redis, s3)
+#   Infra only (dev):   docker compose -f docker/docker-compose.yml up -d   (postgres, redis, s3, mailpit)
 #   Full stack images:  BETTER_AUTH_SECRET=... docker compose -f docker/docker-compose.yml --profile app up -d --build
 services:
   postgres:
@@ -25,6 +25,14 @@ services:
       test: ["CMD", "redis-cli", "ping"]
       interval: 5s
       retries: 10
+
+  # Dev mail catcher: the backend sends to smtp://localhost:1025, read the
+  # messages at http://localhost:8025. Nothing leaves the machine.
+  mailpit:
+    image: axllent/mailpit:latest
+    ports:
+      - "1025:1025"
+      - "8025:8025"
 
   # S3-compatible object storage for receipt photos (Apache-2.0).
   # Dev only: no identities configured = open S3 API on localhost.

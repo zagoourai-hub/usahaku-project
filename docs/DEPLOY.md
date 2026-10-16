@@ -41,6 +41,7 @@ Backend menjalankan `prisma migrate deploy` otomatis saat start. Worker OCR dan 
 | `TRUST_PROXY_HOPS` | ya | `1` di belakang Traefik Coolify; `2` bila Cloudflare proxy juga di depan. Salah isi = limit IP dan batas akun per IP dihitung per proxy, bukan per pengguna |
 | `REDIS_URL` | ya | dari resource Redis |
 | `S3_ENDPOINT`, `S3_BUCKET`, `S3_ACCESS_KEY`, `S3_SECRET_KEY`, `S3_REGION` | ya | dari penyimpanan S3 |
+| `SMTP_URL`, `MAIL_FROM` | ya (verifikasi email, reset sandi) | mis. `smtps://resend:API_KEY@smtp.resend.com:465` dan `UsahaKu <no-reply@usahaku.id>`. Domain pengirim harus terverifikasi (SPF/DKIM) di penyedia email. Kosong = email tidak terkirim, pengguna baru tidak bisa memakai scan struk dan saran AI |
 | `TURNSTILE_SECRET_KEY` | disarankan | dari dashboard Cloudflare (kosong = cek bot mati) |
 | `OPENROUTER_API_KEY`, `OPENROUTER_MODEL` | untuk fitur AI | kosong = fitur AI mengembalikan 503 |
 | `AI_DAILY_CALL_CAP` | opsional | default 1000 panggilan AI per hari, 0 = tanpa batas |
@@ -73,5 +74,6 @@ Buat widget di dashboard Cloudflare dengan hostname `app.usahaku.id`. Site key k
 2. Daftar akun dari `https://app.usahaku.id/register`: widget tampil, masuk ke onboarding.
 3. DevTools → Application → Cookies: `__Secure-usahaku.session_token`, `HttpOnly`, `Secure`, domain `.usahaku.id`.
 4. Refresh `/dashboard` tetap login, Keluar memutus sesi.
-5. Scan struk (butuh S3 dan `OPENROUTER_API_KEY`) dan lihat log `usage feature=ocr`.
-6. Daftar dari 4 akun berbeda pada IP yang sama: yang ke-4 ditolak (membuktikan `TRUST_PROXY_HOPS` benar bila IP yang dilihat adalah IP klien, bukan IP proxy).
+5. Daftar akun baru: email konfirmasi masuk, tautannya mengaktifkan scan struk dan saran AI; "Lupa kata sandi?" mengirim tautan reset yang bisa dipakai sekali.
+6. Scan struk (butuh S3 dan `OPENROUTER_API_KEY`) dan lihat log `usage feature=ocr`.
+7. Daftar dari 4 akun berbeda pada IP yang sama: yang ke-4 ditolak (membuktikan `TRUST_PROXY_HOPS` benar bila IP yang dilihat adalah IP klien, bukan IP proxy).

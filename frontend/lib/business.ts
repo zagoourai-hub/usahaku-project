@@ -12,7 +12,7 @@ export type Business = {
   city: string | null;
   dailyProfitTarget: string | null;
   branchLabel: string | null;
-  user: { name: string; email: string };
+  user: { name: string; email: string; emailVerified: boolean };
 };
 
 export const businessKey = ["business", "me"] as const;
