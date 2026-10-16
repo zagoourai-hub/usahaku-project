@@ -9,7 +9,7 @@ Sumber: `docs/PRD.md` · Desain: `design/` (Stitch export) · Last Updated: 2026
 | 0 Landing | 6 | 6 | 0 | 0 | 0 | 0 |
 | 1 Fondasi, Auth & Costing | 46 | 43 | 0 | 0 | 0 | 3 |
 | 2 Finance | 23 | 23 | 0 | 0 | 0 | 0 |
-| 3 Reporting, Tier & Deploy | 21 | 16 | 0 | 0 | 5 | 0 |
+| 3 Reporting, Tier & Deploy | 21 | 19 | 0 | 0 | 2 | 0 |
 | 4 Integrasi Backend | 9 | 9 | 0 | 0 | 0 | 0 |
 | 5 Auth & Anti-Abuse | 8 | 6 | 0 | 0 | 2 | 0 |
 
@@ -129,9 +129,9 @@ Base `http://localhost:4000`, cookie `usahaku.session_token` (FE fetch `credenti
 | 3-10 | 3 | BE | completed | `UsageService` (increment + check atomic) | 3-08 | `pnpm test:e2e` 19/19 (402 + counter rollback) | Upsert increment dalam tx yang sama dgn insert |
 | 3-11 | 3 | BE | completed | `TierGuard` + `@RequireQuota()` | 3-10 | `pnpm test:e2e` 19/19 | Diganti cek kuota di service (atomic dgn create), bukan guard; HTTP 402 |
 | 3-12 | 3 | BE | completed | `SubscriptionController` | 3-08 | `pnpm test:e2e` 19/19 | `GET /subscription/me` (tier, limit, usage) |
-| 3-13 | 3 | FE | todo | Halaman `/pricing` | L-03 | | bisa reuse section harga landing |
-| 3-14 | 3 | FE | todo | `UsageMeter` | 3-12 | | |
-| 3-15 | 3 | FE | todo | `UpgradeModal` saat 402 | 3-11 | | |
+| 3-13 | 3 | FE | completed | Halaman `/pricing` | L-03 | Playwright: `/pricing` desktop + mobile 375 (tanpa overflow-x), paket aktif ditandai, tabel perbandingan; `screenshots/pricing-*-free.png` | Di grup (app), butuh login (matcher `proxy.ts`). Data paket di `lib/plans.ts` (cermin `TIER_LIMITS`), dipakai juga oleh landing. Pembayaran online belum ada: tombol Pro = email ke halo@usahaku.id. Klaim landing yang tak ada di backend (trial 14 hari, 3 pengguna tim, backup cloud, resep tanpa batas di Gratis) dihapus |
+| 3-14 | 3 | FE | completed | `UsageMeter` | 3-12 | Playwright: kartu pemakaian di Beranda dan `/pricing` (0/10, 0/100, 0/10, 0/5); `screenshots/dashboard-desktop-usage-meter.png` | `app/(app)/usage-meter.tsx` + `lib/subscription.ts` (satu query key untuk sidebar, laporan, meter). Bar kuning ≥80%, merah saat penuh |
+| 3-15 | 3 | FE | completed | `UpgradeModal` saat 402 | 3-11 | Playwright: 402 pada upload struk → modal "Batas paket tercapai" → "Lihat paket Pro" → `/pricing`, modal tertutup; `screenshots/upgrade-modal-desktop-402.png` | Global: `providers.tsx` menangkap semua 402 (query & mutation) → `lib/upgrade.ts` + `upgrade-modal.tsx` (native `<dialog>`, bukan SweetAlert2). 402 disimulasikan (route mock); kontrak 402 sudah dites e2e backend |
 | 3-16 | 3 | OPS | todo | Coolify resource config | 1-04, 1-05 | | |
 | 3-17 | 3 | OPS | completed | `.github/workflows/ci.yml` | - | actionlint bersih; belum dijalankan di GitHub | Job backend: postgres + redis (services) + SeaweedFS (docker run) → lint, typecheck, test, e2e, build, audit. Job frontend: lint, tsc, build |
 | 3-18 | 3 | OPS | completed | `.github/workflows/deploy.yml` | 3-17 | actionlint bersih; belum dijalankan (root belum repo GitHub, secrets belum ada) | Setelah CI sukses di main: build+push GHCR (backend, frontend) → webhook Coolify. Butuh secrets `COOLIFY_TOKEN`, `COOLIFY_WEBHOOK_BACKEND/FRONTEND`, var `NEXT_PUBLIC_API_URL` |
