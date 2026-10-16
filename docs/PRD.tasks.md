@@ -11,7 +11,7 @@ Sumber: `docs/PRD.md` · Desain: `design/` (Stitch export) · Last Updated: 2026
 | 2 Finance | 23 | 23 | 0 | 0 | 0 | 0 |
 | 3 Reporting, Tier & Deploy | 21 | 19 | 0 | 0 | 2 | 0 |
 | 4 Integrasi Backend | 9 | 9 | 0 | 0 | 0 | 0 |
-| 5 Auth & Anti-Abuse | 8 | 6 | 0 | 0 | 2 | 0 |
+| 5 Auth & Anti-Abuse | 9 | 7 | 0 | 0 | 2 | 0 |
 
 ## Arsitektur
 
@@ -167,3 +167,4 @@ Selesai 2026-09-27: semua data dummy `frontend/lib/mock.ts` diganti endpoint asl
 | A-06 | 5 | FE | completed | Login/register/logout memakai endpoint Better Auth; `proxy.ts` baca cookie baru | A-05 | Playwright: daftar → onboarding → dashboard → keluar → salah sandi → masuk; 0 error halaman | Sandbox tanpa S3/Cloudflare: OCR & captcha asli belum diuji |
 | A-07 | 5 | BE | todo | Reset sandi, verifikasi email, login Google (plugin Better Auth) | A-05 | | Butuh pengirim email (Resend/SMTP) dan key OAuth |
 | A-08 | 5 | OPS | todo | Cookie lintas subdomain di production (`crossSubDomainCookies`) atau FE+API satu domain | A-05 | | `proxy.ts` FE tidak melihat cookie host API bila domain berbeda |
+| A-09 | 5 | BE | completed | Pengaman biaya AI: batas panggilan global harian (`AI_DAILY_CALL_CAP`), `maxRetries: 0`, `maxOutputTokens`, log pemakaian token | 2-16 | e2e `caps AI provider calls per day app-wide` (503; 0 = tanpa batas); pnpm lint/typecheck hijau; e2e 35/40 (5 gagal = S3 tidak jalan) | OCR maks 2 panggilan/scan (BullMQ), saran harga 1 panggilan. Token dicatat di log, belum per akun. Belum diuji dengan OpenRouter asli |

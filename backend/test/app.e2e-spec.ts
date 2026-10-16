@@ -5,7 +5,7 @@ import { Test } from '@nestjs/testing';
 import { ThrottlerStorage } from '@nestjs/throttler';
 import request from 'supertest';
 import type TestAgent from 'supertest/lib/agent.js';
-import { AiService } from '../src/ai/ai.service.js';
+import { AiBudget, AiService } from '../src/ai/ai.service.js';
 import { AppModule, configureApp } from '../src/app.module.js';
 import { SignupLimiter } from '../src/auth/rate-limit.js';
 import { PrismaService } from '../src/prisma/prisma.service.js';
@@ -1129,5 +1129,19 @@ describe('UsahaKu API (e2e)', () => {
     }
     await throttled.close();
     expect(codes).toContain(429);
+  });
+
+  it('caps AI provider calls per day app-wide (503), 0 = unlimited', async () => {
+    const budget = new AiBudget(2, `test-ai-${randomUUID()}`);
+    const unlimited = new AiBudget(0, `test-ai-${randomUUID()}`);
+    try {
+      await budget.take();
+      await budget.take();
+      await expect(budget.take()).rejects.toMatchObject({ status: 503 });
+      for (let i = 0; i < 5; i++) await unlimited.take();
+    } finally {
+      budget.disconnect();
+      unlimited.disconnect();
+    }
   });
 });
