@@ -28,6 +28,18 @@ export function createAuth(prisma: PrismaService) {
     throw new Error('BETTER_AUTH_SECRET must be set (min 32 chars)');
   }
   const turnstileSecret = process.env.TURNSTILE_SECRET_KEY;
+  // Cookie security and CSRF trust derive from these: never guess them in production.
+  if (
+    isProd() &&
+    !(process.env.BETTER_AUTH_URL && process.env.FRONTEND_ORIGIN)
+  ) {
+    throw new Error(
+      'BETTER_AUTH_URL and FRONTEND_ORIGIN must be set in production',
+    );
+  }
+  // Frontend and API on sibling subdomains (app.x.com / api.x.com): the session
+  // cookie must be visible to both, e.g. COOKIE_DOMAIN=.x.com. Unset = host-only.
+  const cookieDomain = process.env.COOKIE_DOMAIN;
 
   return betterAuth({
     appName: 'UsahaKu',
@@ -61,6 +73,9 @@ export function createAuth(prisma: PrismaService) {
     advanced: {
       cookiePrefix: 'usahaku',
       useSecureCookies: isProd(),
+      ...(cookieDomain && {
+        crossSubDomainCookies: { enabled: true, domain: cookieDomain },
+      }),
       // Better Auth skips the CSRF origin check when NODE_ENV=test; keep it on.
       disableOriginCheck: false,
       database: { generateId: () => randomUUID() },

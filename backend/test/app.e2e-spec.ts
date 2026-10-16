@@ -104,6 +104,47 @@ describe('UsahaKu API (e2e)', () => {
         .expect(401);
     });
 
+    it('scopes the session cookie to COOKIE_DOMAIN for subdomain deployments', async () => {
+      process.env.COOKIE_DOMAIN = '.usahaku.test';
+      const mod = await Test.createTestingModule({ imports: [AppModule] })
+        .overrideProvider(ThrottlerStorage)
+        .useValue({
+          increment: async () => ({
+            totalHits: 1,
+            timeToExpire: 0,
+            isBlocked: false,
+            timeToBlockExpire: 0,
+          }),
+        })
+        .overrideProvider(SignupLimiter)
+        .useValue({
+          take: async () => undefined,
+          release: async () => undefined,
+        })
+        .compile();
+      delete process.env.COOKIE_DOMAIN;
+      const sub = mod.createNestApplication();
+      configureApp(sub);
+      await sub.init();
+      try {
+        const res = await signUp(sub.getHttpServer(), {
+          name: 'D',
+          email: `dom-${randomUUID()}@test.local`,
+          password: 'rahasia123',
+        }).expect(200);
+        expect(String(res.headers['set-cookie'])).toMatch(
+          /usahaku\.session_token=.+Domain=\.usahaku\.test/i,
+        );
+      } finally {
+        await sub.close();
+      }
+    });
+
+    it('exposes a public health check', async () => {
+      const res = await request(app.getHttpServer()).get('/health').expect(200);
+      expect(res.body).toEqual({ status: 'ok' });
+    });
+
     it('sign-out revokes the session: a copied cookie stops working', async () => {
       const res = await signUp(app.getHttpServer(), {
         name: 'L',

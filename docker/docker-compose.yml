@@ -45,6 +45,7 @@ services:
       DATABASE_URL: postgresql://${POSTGRES_USER:-hppku}:${POSTGRES_PASSWORD:-hppku}@postgres:5432/${POSTGRES_DB:-hppku}?schema=public
       BETTER_AUTH_SECRET: ${BETTER_AUTH_SECRET:-} # app refuses to boot if < 32 chars
       BETTER_AUTH_URL: ${BETTER_AUTH_URL:-http://localhost:4000} # public URL of this backend
+      COOKIE_DOMAIN: ${COOKIE_DOMAIN:-}
       FRONTEND_ORIGIN: ${FRONTEND_ORIGIN:-http://localhost:3000}
       REDIS_URL: redis://redis:6379
       TURNSTILE_SECRET_KEY: ${TURNSTILE_SECRET_KEY:-}

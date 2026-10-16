@@ -5,6 +5,7 @@ import type { NextFunction, Request, Response } from 'express';
 import { AiModule } from './ai/ai.service.js';
 import { AuthModule } from './auth/auth.module.js';
 import { BusinessModule } from './business/business.module.js';
+import { HealthController } from './health.controller.js';
 import { CategoryModule } from './category/category.module.js';
 import { IngredientModule } from './ingredient/ingredient.module.js';
 import { NotificationModule } from './notification/notification.module.js';
@@ -18,6 +19,7 @@ import { SubscriptionModule } from './subscription/subscription.module.js';
 import { TransactionModule } from './transaction/transaction.module.js';
 
 @Module({
+  controllers: [HealthController],
   imports: [
     PrismaModule,
     BullModule.forRootAsync({

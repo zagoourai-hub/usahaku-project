@@ -9,9 +9,9 @@ Sumber: `docs/PRD.md` · Desain: `design/` (Stitch export) · Last Updated: 2026
 | 0 Landing | 6 | 6 | 0 | 0 | 0 | 0 |
 | 1 Fondasi, Auth & Costing | 46 | 43 | 0 | 0 | 0 | 3 |
 | 2 Finance | 23 | 23 | 0 | 0 | 0 | 0 |
-| 3 Reporting, Tier & Deploy | 21 | 19 | 0 | 0 | 2 | 0 |
+| 3 Reporting, Tier & Deploy | 21 | 19 | 0 | 1 | 1 | 0 |
 | 4 Integrasi Backend | 9 | 9 | 0 | 0 | 0 | 0 |
-| 5 Auth & Anti-Abuse | 9 | 7 | 0 | 0 | 2 | 0 |
+| 5 Auth & Anti-Abuse | 9 | 8 | 0 | 0 | 1 | 0 |
 
 ## Arsitektur
 
@@ -132,8 +132,8 @@ Base `http://localhost:4000`, cookie `usahaku.session_token` (FE fetch `credenti
 | 3-13 | 3 | FE | completed | Halaman `/pricing` | L-03 | Playwright: `/pricing` desktop + mobile 375 (tanpa overflow-x), paket aktif ditandai, tabel perbandingan; `screenshots/pricing-*-free.png` | Di grup (app), butuh login (matcher `proxy.ts`). Data paket di `lib/plans.ts` (cermin `TIER_LIMITS`), dipakai juga oleh landing. Pembayaran online belum ada: tombol Pro = email ke halo@usahaku.id. Klaim landing yang tak ada di backend (trial 14 hari, 3 pengguna tim, backup cloud, resep tanpa batas di Gratis) dihapus |
 | 3-14 | 3 | FE | completed | `UsageMeter` | 3-12 | Playwright: kartu pemakaian di Beranda dan `/pricing` (0/10, 0/100, 0/10, 0/5); `screenshots/dashboard-desktop-usage-meter.png` | `app/(app)/usage-meter.tsx` + `lib/subscription.ts` (satu query key untuk sidebar, laporan, meter). Bar kuning ≥80%, merah saat penuh |
 | 3-15 | 3 | FE | completed | `UpgradeModal` saat 402 | 3-11 | Playwright: 402 pada upload struk → modal "Batas paket tercapai" → "Lihat paket Pro" → `/pricing`, modal tertutup; `screenshots/upgrade-modal-desktop-402.png` | Global: `providers.tsx` menangkap semua 402 (query & mutation) → `lib/upgrade.ts` + `upgrade-modal.tsx` (native `<dialog>`, bukan SweetAlert2). 402 disimulasikan (route mock); kontrak 402 sudah dites e2e backend |
-| 3-16 | 3 | OPS | todo | Coolify resource config | 1-04, 1-05 | | |
-| 3-17 | 3 | OPS | completed | `.github/workflows/ci.yml` | - | actionlint bersih; belum dijalankan di GitHub | Job backend: postgres + redis (services) + SeaweedFS (docker run) → lint, typecheck, test, e2e, build, audit. Job frontend: lint, tsc, build |
+| 3-16 | 3 | OPS | blocked | Coolify resource config | 1-04, 1-05 | Repo siap: `docs/DEPLOY.md` (resource, env, secrets, cek pasca-deploy), `GET /health`, fail-fast env production, `COOKIE_DOMAIN` | Menunggu akses Coolify bigboss: buat resource, isi env/secrets GitHub, jalankan Deploy pertama |
+| 3-17 | 3 | OPS | completed | `.github/workflows/ci.yml` | - | actionlint bersih; dijalankan di GitHub 2026-10-02: job backend hijau, frontend gagal (`PageProps` belum ada sebelum build) → diperbaiki dengan `next typegen` sebelum `tsc`; belum dijalankan ulang | Job backend: postgres + redis (services) + SeaweedFS (docker run) → lint, typecheck, test, e2e, build, audit. Job frontend: lint, typegen, tsc, build. CI hanya jalan di push ke main dan pull request |
 | 3-18 | 3 | OPS | completed | `.github/workflows/deploy.yml` | 3-17 | actionlint bersih; belum dijalankan (root belum repo GitHub, secrets belum ada) | Setelah CI sukses di main: build+push GHCR (backend, frontend) → webhook Coolify. Butuh secrets `COOLIFY_TOKEN`, `COOLIFY_WEBHOOK_BACKEND/FRONTEND`, var `NEXT_PUBLIC_API_URL` |
 | 3-19 | 3 | OPS | completed | `prisma migrate deploy` di entrypoint | 1-04 | Log container: "No pending migrations to apply" lalu Nest started | CMD: `prisma migrate deploy` lalu `node dist/main.js`; `prisma` pindah ke dependencies, dotenv dihapus |
 | 3-20 | 3 | OPS | completed | `pnpm audit` BE+FE sebelum rilis | - | BE `pnpm audit --prod`: 0; FE `pnpm audit`: 0 | BE: override mysql2/deepmerge-ts/uuid di `pnpm-workspace.yaml` (e2e 19/19 + migrate OK). Sisa temuan hanya devDependencies |
@@ -166,5 +166,5 @@ Selesai 2026-09-27: semua data dummy `frontend/lib/mock.ts` diganti endpoint asl
 | A-05 | 5 | BE | completed | Migrasi auth custom JWT → Better Auth 1.7.10 (sesi DB, argon2, hook Business+Subscription+kategori) | 1-18 | e2e 34/39 (5 gagal = S3 tidak jalan); tes hash lama tetap valid; CSRF origin 403; sign-out mencabut sesi | Migrasi `better_auth` memindah `passwordHash` → `Account.password`. Env: `BETTER_AUTH_SECRET`, `BETTER_AUTH_URL` |
 | A-06 | 5 | FE | completed | Login/register/logout memakai endpoint Better Auth; `proxy.ts` baca cookie baru | A-05 | Playwright: daftar → onboarding → dashboard → keluar → salah sandi → masuk; 0 error halaman | Sandbox tanpa S3/Cloudflare: OCR & captcha asli belum diuji |
 | A-07 | 5 | BE | todo | Reset sandi, verifikasi email, login Google (plugin Better Auth) | A-05 | | Butuh pengirim email (Resend/SMTP) dan key OAuth |
-| A-08 | 5 | OPS | todo | Cookie lintas subdomain di production (`crossSubDomainCookies`) atau FE+API satu domain | A-05 | | `proxy.ts` FE tidak melihat cookie host API bila domain berbeda |
+| A-08 | 5 | OPS | completed | Cookie lintas subdomain di production (`crossSubDomainCookies`) atau FE+API satu domain | A-05 | e2e: `Set-Cookie` memuat `Domain=.usahaku.test` saat `COOKIE_DOMAIN` diisi; backend production gagal start tanpa `BETTER_AUTH_URL`/`FRONTEND_ORIGIN` | Env `COOKIE_DOMAIN` → `crossSubDomainCookies` Better Auth. Kosong = cookie host-only (dev). Belum diuji di domain asli |
 | A-09 | 5 | BE | completed | Pengaman biaya AI: batas panggilan global harian (`AI_DAILY_CALL_CAP`), `maxRetries: 0`, `maxOutputTokens`, log pemakaian token | 2-16 | e2e `caps AI provider calls per day app-wide` (503; 0 = tanpa batas); pnpm lint/typecheck hijau; e2e 35/40 (5 gagal = S3 tidak jalan) | OCR maks 2 panggilan/scan (BullMQ), saran harga 1 panggilan. Token dicatat di log, belum per akun. Belum diuji dengan OpenRouter asli |
