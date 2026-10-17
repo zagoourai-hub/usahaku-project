@@ -11,7 +11,7 @@ Sumber: `docs/PRD.md` · Desain: `design/` (Stitch export) · Last Updated: 2026
 | 2 Finance | 23 | 23 | 0 | 0 | 0 | 0 |
 | 3 Reporting, Tier & Deploy | 21 | 19 | 0 | 1 | 1 | 0 |
 | 4 Integrasi Backend | 9 | 9 | 0 | 0 | 0 | 0 |
-| 5 Auth & Anti-Abuse | 12 | 11 | 0 | 0 | 1 | 0 |
+| 5 Auth & Anti-Abuse | 13 | 12 | 0 | 0 | 1 | 0 |
 
 ## Arsitektur
 
@@ -171,3 +171,4 @@ Selesai 2026-09-27: semua data dummy `frontend/lib/mock.ts` diganti endpoint asl
 | A-10 | 5 | BE+FE | completed | Pengaman pertumbuhan & stabilitas: batas bahan/kategori per paket, sesi maks 10/user, argon2 param OWASP, job pembersihan (sesi, scan, foto struk), pool DB + statement timeout, graceful shutdown, keep-alive proxy | A-05 | e2e: 402 batas bahan/kategori (+PRO lebih longgar), sesi ≤10, purge (foto gagal dihapus → baris dipertahankan), foto kosong → 404/`imageUrl` null; argon2: 12 hash paralel puncak memori 309 → 129 MB, 769 → 152 ms; lint/typecheck BE+FE hijau | Batas 200/1000 bahan dan 30/100 kategori adalah tebakan awal. Foto struk terkonfirmasi dihapus setelah 30 hari (data tetap). Belum diuji dengan S3 asli |
 | A-11 | 5 | BE+FE | todo | Login dengan Google (plugin social Better Auth) | A-07 | | Butuh OAuth client ID/secret dari Google Cloud (redirect URI = `BETTER_AUTH_URL/auth/callback/google`) |
 | A-12 | 5 | BE | completed | Suite tes keamanan e2e (black-box) + perbaikan temuan | A-05, A-07 | `test/security.e2e-spec.ts` 43/43; seluruh e2e 89/94 dua kali berturut-turut (5 gagal = S3 tidak jalan); lint/typecheck hijau | Temuan 1 (diperbaiki): email >254 karakter diterima saat daftar → kini 400 di semua endpoint beremail. Catatan diterima: daftar dengan email terdaftar menjawab 422 (membuka keberadaan email), body sign-up/sign-in memuat token sesi |
+| A-13 | 5 | BE+FE | completed | Uji e2e hitung HPP usaha nyata (Es Teh Manis, 10 gelas/resep): satuan pack/kg, overhead, rekomendasi harga, margin, kenaikan harga bahan | 1-35, 1-43 | Hitung manual (rupiah bulat) = UI live = server: HPP Rp 1.840, rekomendasi Rp 4.600 (dibulatkan Rp 5.000), margin 63,2%; gula 16.000→18.000/kg → HPP Rp 1.890 (+2,7%), riwayat 1.840→1.890; Playwright via UI 0 error; `test/hpp-esteh.e2e-spec.ts` lulus 2x; screenshot `screenshots/*esteh*` | Tes regresi API ikut `pnpm test:e2e` |
