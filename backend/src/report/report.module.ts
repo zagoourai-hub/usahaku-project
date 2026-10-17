@@ -6,6 +6,7 @@ import {
   Query,
   StreamableFile,
 } from '@nestjs/common';
+import { Throttle } from '@nestjs/throttler';
 import { IsIn, IsISO8601, IsOptional, Matches } from 'class-validator';
 import { CurrentBusiness } from '../auth/auth.guard.js';
 import {
@@ -77,6 +78,7 @@ export class ReportController {
   }
 
   @Get('export')
+  @Throttle({ default: { limit: 10, ttl: 60_000 } })
   async export(
     @CurrentBusiness() businessId: string,
     @Query() q: ExportQueryDto,

@@ -23,5 +23,5 @@ COPY --from=build --chown=node:node /app/node_modules ./node_modules
 COPY --from=build --chown=node:node /app/dist ./dist
 USER node
 EXPOSE 4000
-# Apply pending migrations, then start. Needs DATABASE_URL + JWT_SECRET.
+# Apply pending migrations, then start. Needs DATABASE_URL + BETTER_AUTH_SECRET.
 CMD ["sh", "-c", "node_modules/.bin/prisma migrate deploy --config prisma7.config.ts && exec node dist/main.js"]

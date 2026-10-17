@@ -14,6 +14,7 @@ import {
   UseInterceptors,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
+import { Throttle } from '@nestjs/throttler';
 import type { Job } from 'bullmq';
 import { CurrentBusiness } from '../auth/auth.guard.js';
 import { IngredientModule } from '../ingredient/ingredient.module.js';
@@ -41,6 +42,7 @@ export class OcrController {
   /** multipart/form-data, field `image`. Returns 202 + scan id; poll GET /receipts/:id. */
   @Post()
   @HttpCode(202)
+  @Throttle({ default: { limit: 10, ttl: 60_000 } })
   @UseInterceptors(
     FileInterceptor('image', {
       limits: { fileSize: MAX_IMAGE_BYTES, files: 1 },
@@ -89,5 +91,6 @@ export class OcrController {
   ],
   controllers: [OcrController],
   providers: [OcrService, OcrProcessor, StorageService],
+  exports: [StorageService],
 })
 export class OcrModule {}

@@ -6,7 +6,8 @@ import { useRouter } from "next/navigation";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Camera, ImageUp, Loader2, Receipt, RotateCcw, ScanLine } from "lucide-react";
 import { api, ApiError } from "@/lib/api-client";
-import { subscriptionKey, useOcrQuota } from "@/lib/receipts";
+import { useOcrQuota } from "@/lib/receipts";
+import { subscriptionKey } from "@/lib/subscription";
 import { FormError } from "@/app/_components/fields";
 import { ghostBtn, primaryBtn } from "../../ui";
 

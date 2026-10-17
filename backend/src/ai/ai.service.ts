@@ -3,8 +3,10 @@ import {
   Injectable,
   Logger,
   Module,
+  OnModuleDestroy,
   ServiceUnavailableException,
 } from '@nestjs/common';
+import { Redis } from 'ioredis';
 import { createOpenRouter } from '@openrouter/ai-sdk-provider';
 import { generateText, Output } from 'ai';
 import {
@@ -26,10 +28,64 @@ const DEFAULT_MODEL = 'dots-studio/dots-3-note-preview:free';
 const DEFAULT_OLLAMA_MODEL = 'qwen2.5vl:7b';
 const TIMEOUT_MS = 90_000;
 
+// Hard ceilings per call, so a looping model cannot run to its context limit.
+// Generous: reasoning tokens (if the model emits any) count toward the cap too.
+const OCR_MAX_OUTPUT_TOKENS = 4096;
+const PRICE_MAX_OUTPUT_TOKENS = 2048;
+
+/**
+ * App-wide daily cap on provider calls: the backstop behind the per-business
+ * quotas (many accounts, or a paid model). 0 = unlimited. Fails closed if
+ * Redis is down, like the throttler.
+ */
+export class AiBudget {
+  private readonly redis = new Redis(
+    process.env.REDIS_URL || 'redis://localhost:6379',
+    { maxRetriesPerRequest: 1, lazyConnect: true },
+  );
+
+  constructor(
+    private readonly cap = Number(process.env.AI_DAILY_CALL_CAP ?? 1000),
+    private readonly prefix = 'ai:calls',
+  ) {}
+
+  async take() {
+    if (this.cap <= 0) return;
+    const key = `${this.prefix}:${new Date().toISOString().slice(0, 10)}`;
+    const count = await this.redis.incr(key);
+    if (count === 1) await this.redis.expire(key, 2 * 24 * 60 * 60);
+    if (count > this.cap) {
+      await this.redis.decr(key);
+      throw new ServiceUnavailableException(
+        'Layanan AI sedang penuh hari ini, coba lagi besok',
+      );
+    }
+  }
+
+  disconnect() {
+    this.redis.disconnect();
+  }
+}
+
 /** Thin wrapper over OpenRouter so tests can swap it out. */
 @Injectable()
-export class AiService {
+export class AiService implements OnModuleDestroy {
   private readonly logger = new Logger(AiService.name);
+
+  private readonly budget = new AiBudget();
+
+  onModuleDestroy() {
+    this.budget.disconnect();
+  }
+
+  private logUsage(
+    feature: string,
+    usage: { inputTokens?: number; outputTokens?: number },
+  ) {
+    this.logger.log(
+      `usage feature=${feature} model=${this.modelId} in=${usage.inputTokens ?? '?'} out=${usage.outputTokens ?? '?'}`,
+    );
+  }
 
   get modelId(): string {
     if (process.env.OLLAMA_BASE_URL) {
@@ -59,10 +115,15 @@ export class AiService {
     image: Uint8Array,
     mediaType: string,
   ): Promise<ReceiptExtraction> {
-    const { output } = await generateText({
-      model: this.model(),
+    const model = this.model();
+    await this.budget.take();
+    const { output, usage } = await generateText({
+      model,
       output: Output.object({ schema: receiptSchema }),
       abortSignal: AbortSignal.timeout(TIMEOUT_MS),
+      // The OCR queue already retries with backoff; SDK retries would multiply cost.
+      maxRetries: 0,
+      maxOutputTokens: OCR_MAX_OUTPUT_TOKENS,
       messages: [
         {
           role: 'user',
@@ -73,6 +134,7 @@ export class AiService {
         },
       ],
     });
+    this.logUsage('ocr', usage);
     return output;
   }
 
@@ -80,12 +142,17 @@ export class AiService {
     input: PriceSuggestionInput,
   ): Promise<PriceSuggestionOutput> {
     try {
-      const { output } = await generateText({
-        model: this.model(),
+      const model = this.model();
+      await this.budget.take();
+      const { output, usage } = await generateText({
+        model,
         output: Output.object({ schema: priceSuggestionSchema }),
         abortSignal: AbortSignal.timeout(TIMEOUT_MS),
+        maxRetries: 0, // a failed call is retried by the user, not silently re-billed
+        maxOutputTokens: PRICE_MAX_OUTPUT_TOKENS,
         prompt: priceSuggestionPrompt(input),
       });
+      this.logUsage('price-suggestion', usage);
       return output;
     } catch (e) {
       if (e instanceof ServiceUnavailableException) throw e;

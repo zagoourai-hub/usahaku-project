@@ -1,34 +1,68 @@
-import { Module } from '@nestjs/common';
+import { ExecutionContext, Module } from '@nestjs/common';
 import { APP_GUARD } from '@nestjs/core';
-import { JwtModule } from '@nestjs/jwt';
-import { ThrottlerModule } from '@nestjs/throttler';
+import {
+  ThrottlerGuard,
+  ThrottlerModule,
+  type ThrottlerOptions,
+} from '@nestjs/throttler';
+import type { Request } from 'express';
+import { PrismaService } from '../prisma/prisma.service.js';
+import { createAuth } from './auth.config.js';
+import { AUTH } from './auth.constants.js';
 import { AuthController } from './auth.controller.js';
-import { JwtAuthGuard, TokenDenylist } from './auth.guard.js';
-import { AuthService, TOKEN_TTL_SECONDS } from './auth.service.js';
+import { SessionGuard } from './auth.guard.js';
+import { MailService } from './mail.service.js';
+import { RedisThrottlerStorage, SignupLimiter } from './rate-limit.js';
+
+/** Throttler that only applies to the listed auth endpoints. */
+const onlyFor = (
+  name: string,
+  paths: string[],
+  limit: number,
+): ThrottlerOptions => ({
+  name,
+  ttl: 60_000,
+  limit,
+  skipIf: (ctx: ExecutionContext) =>
+    !paths.includes(ctx.switchToHttp().getRequest<Request>().path),
+});
 
 @Module({
   imports: [
-    JwtModule.registerAsync({
-      useFactory: () => {
-        const secret = process.env.JWT_SECRET;
-        if (!secret || secret.length < 32) {
-          throw new Error('JWT_SECRET must be set (min 32 chars)');
-        }
-        return {
-          secret,
-          signOptions: { expiresIn: TOKEN_TTL_SECONDS, algorithm: 'HS256' },
-          verifyOptions: { algorithms: ['HS256'] },
-        };
-      },
+    // Global per-IP cap for every route (`default`); auth endpoints get their
+    // own tighter counters. Routes can still tighten `default` with @Throttle.
+    // Counters live in Redis (see RedisThrottlerStorage).
+    ThrottlerModule.forRootAsync({
+      useFactory: () => ({
+        throttlers: [
+          { name: 'default', ttl: 60_000, limit: 120 },
+          onlyFor('sign-up', ['/auth/sign-up/email'], 5),
+          onlyFor('sign-in', ['/auth/sign-in/email'], 10),
+          onlyFor('reset', ['/auth/reset-password'], 10),
+          // Each call sends an email: keep mail bombing of one address cheap to stop.
+          onlyFor(
+            'mail',
+            ['/auth/send-verification-email', '/auth/request-password-reset'],
+            3,
+          ),
+        ],
+        storage: new RedisThrottlerStorage(),
+      }),
     }),
-    // Only applied where ThrottlerGuard is used (public auth routes).
-    ThrottlerModule.forRoot([{ ttl: 60_000, limit: 10 }]),
   ],
   controllers: [AuthController],
   providers: [
-    AuthService,
-    TokenDenylist,
-    { provide: APP_GUARD, useClass: JwtAuthGuard },
+    SignupLimiter,
+    MailService,
+    {
+      provide: AUTH,
+      inject: [PrismaService, MailService],
+      useFactory: (prisma: PrismaService, mail: MailService) =>
+        createAuth(prisma, mail),
+    },
+    // Throttle first so unauthenticated floods are cut before session lookups.
+    { provide: APP_GUARD, useClass: ThrottlerGuard },
+    { provide: APP_GUARD, useClass: SessionGuard },
   ],
 })
 export class AuthModule {}

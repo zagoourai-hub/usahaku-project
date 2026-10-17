@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -24,13 +25,15 @@ export function LoginForm() {
 
   const onSubmit = handleSubmit(async (values) => {
     try {
-      await api("/auth/login", { method: "POST", body: JSON.stringify(values) });
+      await api("/auth/sign-in/email", { method: "POST", body: JSON.stringify(values) });
       router.replace("/dashboard");
     } catch (err) {
       const message =
         err instanceof ApiError && err.status === 401
           ? "Email atau kata sandi salah."
-          : err instanceof ApiError
+          : err instanceof ApiError && err.status === 429
+            ? "Terlalu banyak percobaan. Tunggu sebentar lalu coba lagi."
+            : err instanceof ApiError
             ? err.message
             : "Terjadi kesalahan. Coba lagi sebentar.";
       setError("root", { message });
@@ -50,6 +53,11 @@ export function LoginForm() {
         {...register("email")}
       />
       <PasswordField label="Kata Sandi" autoComplete="current-password" placeholder="Kata sandi kamu" error={errors.password?.message} {...register("password")} />
+      <p className="-mt-2 text-right text-sm">
+        <Link href="/forgot-password" className="rounded font-semibold text-primary underline-offset-4 hover:underline">
+          Lupa kata sandi?
+        </Link>
+      </p>
       <FormError message={errors.root?.message} />
       <SubmitButton pending={isSubmitting}>
         {isSubmitting ? <Loader2 className="size-5 animate-spin motion-reduce:animate-none" /> : null}

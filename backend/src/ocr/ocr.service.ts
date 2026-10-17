@@ -86,6 +86,7 @@ export class OcrService implements OnApplicationBootstrap {
   }
 
   async upload(businessId: string, bytes: Uint8Array) {
+    await this.usage.assertEmailVerified(businessId);
     const mimeType = sniffImage(bytes);
     if (!mimeType) {
       throw new BadRequestException('Foto harus JPG, PNG, atau WEBP');
@@ -115,6 +116,7 @@ export class OcrService implements OnApplicationBootstrap {
       select: {
         id: true,
         status: true,
+        imageKey: true,
         merchantName: true,
         detectedTotal: true,
         detectedDate: true,
@@ -142,7 +144,12 @@ export class OcrService implements OnApplicationBootstrap {
       },
     });
     if (!scan) throw new NotFoundException('Struk tidak ditemukan');
-    return { ...scan, imageUrl: `/receipts/${scan.id}/image` };
+    const { imageKey, ...rest } = scan;
+    // Photos are purged by the maintenance job after a while.
+    return {
+      ...rest,
+      imageUrl: imageKey ? `/receipts/${scan.id}/image` : null,
+    };
   }
 
   async image(businessId: string, id: string) {
@@ -150,7 +157,8 @@ export class OcrService implements OnApplicationBootstrap {
       where: { id, businessId },
       select: { imageKey: true, mimeType: true },
     });
-    if (!scan) throw new NotFoundException('Struk tidak ditemukan');
+    if (!scan?.imageKey)
+      throw new NotFoundException('Foto struk tidak tersedia');
     return {
       bytes: await this.storage.get(scan.imageKey),
       mimeType: scan.mimeType,
@@ -169,6 +177,7 @@ export class OcrService implements OnApplicationBootstrap {
     });
 
     try {
+      if (!scan.imageKey) throw new Error('Receipt photo is gone');
       const image = await this.storage.get(scan.imageKey);
       const result = await this.ai.extractReceipt(image, scan.mimeType);
       const ingredients = await this.prisma.ingredient.findMany({

@@ -2,11 +2,15 @@ import { randomUUID } from 'node:crypto';
 import { existsSync } from 'node:fs';
 import { INestApplication, ServiceUnavailableException } from '@nestjs/common';
 import { Test } from '@nestjs/testing';
-import { ThrottlerGuard } from '@nestjs/throttler';
+import { ThrottlerStorage } from '@nestjs/throttler';
 import request from 'supertest';
 import type TestAgent from 'supertest/lib/agent.js';
-import { AiService } from '../src/ai/ai.service.js';
+import { AiBudget, AiService } from '../src/ai/ai.service.js';
+import { type Mail, MailService } from '../src/auth/mail.service.js';
 import { AppModule, configureApp } from '../src/app.module.js';
+import { SignupLimiter } from '../src/auth/rate-limit.js';
+import { MaintenanceService } from '../src/maintenance/maintenance.module.js';
+import { StorageService } from '../src/ocr/storage.service.js';
 import { PrismaService } from '../src/prisma/prisma.service.js';
 import { currentPeriod } from '../src/subscription/subscription.module.js';
 
@@ -26,25 +30,71 @@ describe('UsahaKu API (e2e)', () => {
     suggestPrice: vi.fn(),
   };
 
+  // Better Auth rejects cookie-bearing POSTs without a trusted Origin (CSRF).
+  const ORIGIN = 'http://localhost:3000';
+  const signUp = (
+    server: ReturnType<INestApplication['getHttpServer']>,
+    body: Record<string, unknown>,
+    headers: Record<string, string> = {},
+  ) =>
+    request(server)
+      .post('/auth/sign-up/email')
+      .set('Origin', ORIGIN)
+      .set(headers)
+      .send(body);
+
+  // Outbox instead of SMTP: emails the app "sends" land here.
+  const outbox: Mail[] = [];
+  const mailbox = {
+    send: async (mail: Mail) => {
+      outbox.push(mail);
+    },
+  };
+  const lastMailTo = async (email: string) => {
+    // sending is fire-and-forget, give it a tick
+    for (let i = 0; i < 20; i++) {
+      const found = [...outbox].reverse().find((m) => m.to === email);
+      if (found) return found;
+      await new Promise((r) => setTimeout(r, 25));
+    }
+    return undefined;
+  };
+  const tokenIn = (mail: Mail) =>
+    new URL(/https?:\/\/\S+/.exec(mail.text)![0]).searchParams.get('token')!;
+
+  // Verified by default: AI features need a confirmed email (tested separately).
   const register = async () => {
-    const agent = request.agent(app.getHttpServer());
+    const agent = request.agent(app.getHttpServer()).set('Origin', ORIGIN);
+    const email = `t-${randomUUID()}@test.local`;
     await agent
-      .post('/auth/register')
-      .send({
-        name: 'Tester',
-        email: `t-${randomUUID()}@test.local`,
-        password: 'rahasia123',
-      })
-      .expect(201);
+      .post('/auth/sign-up/email')
+      .send({ name: 'Tester', email, password: 'rahasia123' })
+      .expect(200);
+    await prisma.user.update({
+      where: { email },
+      data: { emailVerified: true },
+    });
     return agent;
   };
 
   beforeAll(async () => {
     if (existsSync('.env')) process.loadEnvFile();
+    process.env.FRONTEND_ORIGIN = ORIGIN;
     // Throttling is covered by its own app below; disable it for the rest.
     const mod = await Test.createTestingModule({ imports: [AppModule] })
-      .overrideGuard(ThrottlerGuard)
-      .useValue({ canActivate: () => true })
+      .overrideProvider(ThrottlerStorage)
+      .useValue({
+        increment: async () => ({
+          totalHits: 1,
+          timeToExpire: 0,
+          isBlocked: false,
+          timeToBlockExpire: 0,
+        }),
+      })
+      .overrideProvider(SignupLimiter)
+      .useValue({ take: async () => undefined, release: async () => undefined })
+      .overrideProvider(MailService)
+      .useValue(mailbox)
       .overrideProvider(AiService)
       .useValue(ai)
       .compile();
@@ -61,37 +111,72 @@ describe('UsahaKu API (e2e)', () => {
   });
 
   describe('auth', () => {
-    it('sets an httpOnly cookie, never returns the token in the body', async () => {
-      const res = await request(app.getHttpServer())
-        .post('/auth/register')
-        .send({
-          name: 'X',
-          email: `x-${randomUUID()}@test.local`,
-          password: 'rahasia123',
-        })
-        .expect(201);
-      expect(res.body).toEqual({ ok: true });
+    it('sets an httpOnly session cookie on sign-up', async () => {
+      const res = await signUp(app.getHttpServer(), {
+        name: 'X',
+        email: `x-${randomUUID()}@test.local`,
+        password: 'rahasia123',
+      }).expect(200);
       const cookie = String(res.headers['set-cookie']);
-      expect(cookie).toMatch(/access_token=.+HttpOnly/);
+      expect(cookie).toMatch(/usahaku\.session_token=.+HttpOnly/);
+      expect(cookie).toMatch(/SameSite=Lax/i);
     });
 
     it('rejects requests without / with a forged cookie', async () => {
       await request(app.getHttpServer()).get('/business/me').expect(401);
       await request(app.getHttpServer())
         .get('/business/me')
-        .set('Cookie', 'access_token=forged.token.value')
+        .set('Cookie', 'usahaku.session_token=forged.token.value')
         .expect(401);
     });
 
-    it('logout revokes the token: a copied cookie stops working', async () => {
-      const res = await request(app.getHttpServer())
-        .post('/auth/register')
-        .send({
-          name: 'L',
-          email: `l-${randomUUID()}@test.local`,
-          password: 'rahasia123',
+    it('scopes the session cookie to COOKIE_DOMAIN for subdomain deployments', async () => {
+      process.env.COOKIE_DOMAIN = '.usahaku.test';
+      const mod = await Test.createTestingModule({ imports: [AppModule] })
+        .overrideProvider(ThrottlerStorage)
+        .useValue({
+          increment: async () => ({
+            totalHits: 1,
+            timeToExpire: 0,
+            isBlocked: false,
+            timeToBlockExpire: 0,
+          }),
         })
-        .expect(201);
+        .overrideProvider(SignupLimiter)
+        .useValue({
+          take: async () => undefined,
+          release: async () => undefined,
+        })
+        .compile();
+      delete process.env.COOKIE_DOMAIN;
+      const sub = mod.createNestApplication();
+      configureApp(sub);
+      await sub.init();
+      try {
+        const res = await signUp(sub.getHttpServer(), {
+          name: 'D',
+          email: `dom-${randomUUID()}@test.local`,
+          password: 'rahasia123',
+        }).expect(200);
+        expect(String(res.headers['set-cookie'])).toMatch(
+          /usahaku\.session_token=.+Domain=\.usahaku\.test/i,
+        );
+      } finally {
+        await sub.close();
+      }
+    });
+
+    it('exposes a public health check', async () => {
+      const res = await request(app.getHttpServer()).get('/health').expect(200);
+      expect(res.body).toEqual({ status: 'ok' });
+    });
+
+    it('sign-out revokes the session: a copied cookie stops working', async () => {
+      const res = await signUp(app.getHttpServer(), {
+        name: 'L',
+        email: `l-${randomUUID()}@test.local`,
+        password: 'rahasia123',
+      }).expect(200);
       const cookie = String(res.headers['set-cookie']).split(';')[0];
       const me = await request(app.getHttpServer())
         .get('/business/me')
@@ -103,8 +188,10 @@ describe('UsahaKu API (e2e)', () => {
       });
       expect(me.headers['x-powered-by']).toBeUndefined();
       await request(app.getHttpServer())
-        .post('/auth/logout')
+        .post('/auth/sign-out')
+        .set('Origin', ORIGIN)
         .set('Cookie', cookie)
+        .send({})
         .expect(200);
       await request(app.getHttpServer())
         .get('/business/me')
@@ -112,32 +199,76 @@ describe('UsahaKu API (e2e)', () => {
         .expect(401);
     });
 
+    it('rejects cookie-bearing POST from an untrusted origin (CSRF)', async () => {
+      const res = await signUp(app.getHttpServer(), {
+        name: 'C',
+        email: `c-${randomUUID()}@test.local`,
+        password: 'rahasia123',
+      }).expect(200);
+      const cookie = String(res.headers['set-cookie']).split(';')[0];
+      await request(app.getHttpServer())
+        .post('/auth/sign-out')
+        .set('Origin', 'https://evil.example')
+        .set('Cookie', cookie)
+        .send({})
+        .expect(403);
+    });
+
     it('rejects duplicate email and wrong password', async () => {
       const email = `d-${randomUUID()}@test.local`;
       const body = { name: 'D', email, password: 'rahasia123' };
-      await request(app.getHttpServer())
-        .post('/auth/register')
-        .send(body)
-        .expect(201);
-      await request(app.getHttpServer())
-        .post('/auth/register')
-        .send(body)
-        .expect(409);
-      await request(app.getHttpServer())
-        .post('/auth/login')
+      const server = app.getHttpServer();
+      await signUp(server, body).expect(200);
+      await signUp(server, body).expect(422);
+      await request(server)
+        .post('/auth/sign-in/email')
+        .set('Origin', ORIGIN)
         .send({ email, password: 'salahsalah' })
         .expect(401);
-      await request(app.getHttpServer())
-        .post('/auth/login')
+      await request(server)
+        .post('/auth/sign-in/email')
+        .set('Origin', ORIGIN)
         .send({ email: email.toUpperCase(), password: 'rahasia123' })
         .expect(200);
     });
 
+    it('still verifies password hashes of accounts created before Better Auth', async () => {
+      const email = `legacy-${randomUUID()}@test.local`;
+      const argon2 = await import('argon2');
+      // Same shape as the migration: credential accountId = user id.
+      const id = randomUUID();
+      await prisma.user.create({
+        data: {
+          id,
+          email,
+          emailCanonical: email,
+          name: 'Legacy',
+          accounts: {
+            create: {
+              accountId: id,
+              providerId: 'credential',
+              password: await argon2.hash('rahasia123'),
+            },
+          },
+          subscription: { create: {} },
+          business: { create: { name: 'Usaha Lama' } },
+        },
+      });
+      const agent = request.agent(app.getHttpServer()).set('Origin', ORIGIN);
+      await agent
+        .post('/auth/sign-in/email')
+        .send({ email, password: 'rahasia123' })
+        .expect(200);
+      const me = await agent.get('/business/me').expect(200);
+      expect(me.body.name).toBe('Usaha Lama');
+    });
+
     it('validates input and strips unknown fields', async () => {
-      await request(app.getHttpServer())
-        .post('/auth/register')
-        .send({ name: 'A', email: 'bukan-email', password: '123' })
-        .expect(400);
+      await signUp(app.getHttpServer(), {
+        name: 'A',
+        email: 'bukan-email',
+        password: '123',
+      }).expect(400);
       await a.patch('/business/me').send({ userId: randomUUID() }).expect(400);
     });
 
@@ -925,6 +1056,127 @@ describe('UsahaKu API (e2e)', () => {
     });
   });
 
+  describe('anti multi-account', () => {
+    const signup = (
+      server: ReturnType<INestApplication['getHttpServer']>,
+      email: string,
+      ip?: string,
+    ) =>
+      signUp(
+        server,
+        { name: 'M', email, password: 'rahasia123' },
+        ip ? { 'X-Forwarded-For': ip } : {},
+      );
+
+    it('treats gmail dots and +tags as the same mailbox', async () => {
+      const base = `m${randomUUID().replaceAll('-', '').slice(0, 12)}`;
+      const server = app.getHttpServer();
+      await signup(server, `${base}@gmail.com`).expect(200);
+      await signup(
+        server,
+        `${base.slice(0, 5)}.${base.slice(5)}@gmail.com`,
+      ).expect(422);
+      await signup(server, `${base}+promo@gmail.com`).expect(422);
+      await signup(server, `${base}@googlemail.com`).expect(422);
+    });
+
+    it('rejects disposable email domains', async () => {
+      await signup(
+        app.getHttpServer(),
+        `x-${randomUUID()}@mailinator.com`,
+      ).expect(400);
+    });
+
+    it('requires a valid Turnstile token when a secret is configured', async () => {
+      process.env.TURNSTILE_SECRET_KEY = 'test-secret';
+      const mod = await Test.createTestingModule({ imports: [AppModule] })
+        .overrideProvider(ThrottlerStorage)
+        .useValue({
+          increment: async () => ({
+            totalHits: 1,
+            timeToExpire: 0,
+            isBlocked: false,
+            timeToBlockExpire: 0,
+          }),
+        })
+        .overrideProvider(SignupLimiter)
+        .useValue({
+          take: async () => undefined,
+          release: async () => undefined,
+        })
+        .compile();
+      delete process.env.TURNSTILE_SECRET_KEY;
+      const guarded = mod.createNestApplication();
+      configureApp(guarded);
+      await guarded.init();
+      const verify = vi
+        .spyOn(globalThis, 'fetch')
+        .mockImplementation(async (_url, init) => {
+          const sent = JSON.parse(init?.body as string) as {
+            response?: string;
+          };
+          return Response.json({ success: sent.response === 'good' });
+        });
+      const server = guarded.getHttpServer();
+      const post = (token?: string) =>
+        signUp(
+          server,
+          {
+            name: 'T',
+            email: `ts-${randomUUID()}@test.local`,
+            password: 'rahasia123',
+          },
+          token ? { 'x-captcha-response': token } : {},
+        );
+      try {
+        await post().expect(400); // missing token, verifier never called
+        // the reset-request form is protected too (email bombing)
+        await request(server)
+          .post('/auth/request-password-reset')
+          .set('Origin', ORIGIN)
+          .send({ email: `rp-${randomUUID()}@test.local` })
+          .expect(400);
+        expect(verify).not.toHaveBeenCalled();
+        await post('bad').expect(403);
+        await post('good').expect(200);
+        verify.mockRejectedValueOnce(new Error('network down'));
+        await post('good').expect(500); // fails closed
+      } finally {
+        verify.mockRestore();
+        await guarded.close();
+      }
+    });
+
+    it('caps new accounts per IP per day, and frees the slot on failure', async () => {
+      process.env.MAX_SIGNUPS_PER_IP_PER_DAY = '2';
+      const mod = await Test.createTestingModule({
+        imports: [AppModule],
+      }).compile();
+      const capped = mod.createNestApplication();
+      configureApp(capped);
+      capped.getHttpAdapter().getInstance().set('trust proxy', 1);
+      await capped.init();
+      delete process.env.MAX_SIGNUPS_PER_IP_PER_DAY;
+      const server = capped.getHttpServer();
+      // Random per run: the counters live in Redis for a day.
+      const randomIp = (net: string) =>
+        `${net}.${Math.floor(Math.random() * 250) + 1}`;
+      const ip = randomIp('203.0.113');
+      const dup = `dup-${randomUUID()}@test.local`;
+      await signup(server, dup, ip).expect(200);
+      await signup(server, dup, ip).expect(422); // failed: must not use a slot
+      await signup(server, `b-${randomUUID()}@test.local`, ip).expect(200);
+      await signup(server, `c-${randomUUID()}@test.local`, ip).expect(429);
+      // another IP is unaffected
+      await signup(
+        server,
+        `d-${randomUUID()}@test.local`,
+        randomIp('198.51.100'),
+      ).expect(200);
+      await capped.close();
+    });
+  });
+
   it('rate-limits login (429)', async () => {
     const mod = await Test.createTestingModule({
       imports: [AppModule],
@@ -939,9 +1191,341 @@ describe('UsahaKu API (e2e)', () => {
     };
     const codes: number[] = [];
     for (let i = 0; i < 12; i++) {
-      codes.push((await request(server).post('/auth/login').send(body)).status);
+      codes.push(
+        (
+          await request(server)
+            .post('/auth/sign-in/email')
+            .set('Origin', ORIGIN)
+            .send(body)
+        ).status,
+      );
     }
     await throttled.close();
     expect(codes).toContain(429);
+  });
+
+  describe('email verification and password reset', () => {
+    const server = () => app.getHttpServer();
+    const newUser = async () => {
+      const email = `ev-${randomUUID()}@test.local`;
+      const res = await signUp(server(), {
+        name: 'Budi',
+        email,
+        password: 'rahasia123',
+      }).expect(200);
+      return { email, cookie: String(res.headers['set-cookie']).split(';')[0] };
+    };
+
+    it('sends a verification email on sign-up; the link verifies and AI stays locked until then', async () => {
+      const { email, cookie } = await newUser();
+      const mail = await lastMailTo(email);
+      expect(mail?.subject).toMatch(/Konfirmasi email/);
+      expect(mail?.text).toContain(`${ORIGIN}/verify-email?token=`);
+      expect(mail?.html).toContain('Halo Budi');
+
+      // unverified: login works, AI upload is refused before anything is stored
+      const png = Buffer.from(
+        'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR4nGP4z8DwHwAFAAH/q842iQAAAABJRU5ErkJggg==',
+        'base64',
+      );
+      const blocked = await request(server())
+        .post('/receipts')
+        .set('Cookie', cookie)
+        .set('Origin', ORIGIN)
+        .attach('image', png, 'struk.png')
+        .expect(403);
+      expect(blocked.body.message).toMatch(/Konfirmasi email/);
+      expect(
+        (await request(server()).get('/business/me').set('Cookie', cookie)).body
+          .user.emailVerified,
+      ).toBe(false);
+
+      const verify = await request(server())
+        .get('/auth/verify-email')
+        .query({ token: tokenIn(mail!) })
+        .expect(200);
+      expect(String(verify.headers['set-cookie'])).toMatch(/session_token/);
+      expect(
+        (await request(server()).get('/business/me').set('Cookie', cookie)).body
+          .user.emailVerified,
+      ).toBe(true);
+    });
+
+    it('rejects a tampered verification token', async () => {
+      const { email } = await newUser();
+      const token = tokenIn((await lastMailTo(email))!);
+      const res = await request(server())
+        .get('/auth/verify-email')
+        .query({ token: `${token}x` });
+      expect(res.status).toBeGreaterThanOrEqual(400);
+      expect(
+        (await prisma.user.findUniqueOrThrow({ where: { email } }))
+          .emailVerified,
+      ).toBe(false);
+    });
+
+    it('resets the password once, revokes old sessions, and never reveals unknown emails', async () => {
+      const { email, cookie } = await newUser();
+      outbox.length = 0;
+
+      const unknown = await request(server())
+        .post('/auth/request-password-reset')
+        .set('Origin', ORIGIN)
+        .send({ email: `nobody-${randomUUID()}@test.local` })
+        .expect(200);
+      expect(unknown.body.status).toBe(true);
+
+      await request(server())
+        .post('/auth/request-password-reset')
+        .set('Origin', ORIGIN)
+        .send({ email })
+        .expect(200);
+      const mail = await lastMailTo(email);
+      expect(mail?.subject).toMatch(/Atur ulang/);
+      expect(mail?.text).toContain(`${ORIGIN}/reset-password?token=`);
+      expect(outbox).toHaveLength(1); // nothing was sent for the unknown address
+
+      const token = tokenIn(mail!);
+      await request(server())
+        .post('/auth/reset-password')
+        .set('Origin', ORIGIN)
+        .send({ newPassword: 'sandibaru123', token })
+        .expect(200);
+      // single use
+      await request(server())
+        .post('/auth/reset-password')
+        .set('Origin', ORIGIN)
+        .send({ newPassword: 'laginyobain1', token })
+        .expect(400);
+
+      const login = (password: string) =>
+        request(server())
+          .post('/auth/sign-in/email')
+          .set('Origin', ORIGIN)
+          .send({ email, password });
+      await login('rahasia123').expect(401);
+      await login('sandibaru123').expect(200);
+      // sessions from before the reset are gone
+      await request(server())
+        .get('/business/me')
+        .set('Cookie', cookie)
+        .expect(401);
+    });
+
+    it('rejects a too-short new password', async () => {
+      const { email } = await newUser();
+      await request(server())
+        .post('/auth/request-password-reset')
+        .set('Origin', ORIGIN)
+        .send({ email })
+        .expect(200);
+      const token = tokenIn((await lastMailTo(email))!);
+      await request(server())
+        .post('/auth/reset-password')
+        .set('Origin', ORIGIN)
+        .send({ newPassword: 'pendek', token })
+        .expect(400);
+    });
+
+    it('rate-limits emails sent per IP (429)', async () => {
+      const mod = await Test.createTestingModule({ imports: [AppModule] })
+        .overrideProvider(MailService)
+        .useValue(mailbox)
+        .compile();
+      const limited = mod.createNestApplication();
+      configureApp(limited);
+      limited.getHttpAdapter().getInstance().set('trust proxy', 1);
+      await limited.init();
+      const ip = `203.0.113.${Math.floor(Math.random() * 250) + 1}`;
+      const codes: number[] = [];
+      for (let i = 0; i < 5; i++) {
+        codes.push(
+          (
+            await request(limited.getHttpServer())
+              .post('/auth/request-password-reset')
+              .set('Origin', ORIGIN)
+              .set('X-Forwarded-For', ip)
+              .send({ email: `x${i}-${randomUUID()}@test.local` })
+          ).status,
+        );
+      }
+      await limited.close();
+      expect(codes.slice(0, 3)).toEqual([200, 200, 200]);
+      expect(codes).toContain(429);
+    });
+  });
+
+  describe('growth limits and cleanup', () => {
+    it('caps ingredients and categories per plan (402), PRO gets more room', async () => {
+      const agent = await register();
+      const me = (await agent.get('/business/me')).body as { id: string };
+      await prisma.ingredient.createMany({
+        data: Array.from({ length: 200 }, (_, i) => ({
+          businessId: me.id,
+          name: `Bahan ${i}`,
+          purchaseUnit: 'kg' as const,
+          purchaseQty: 1,
+          usageUnit: 'gram' as const,
+          purchasePrice: 1000,
+          pricePerUsageUnit: 1,
+        })),
+      });
+      const ingredient = {
+        name: 'Satu lagi',
+        purchaseUnit: 'kg',
+        purchaseQty: 1,
+        usageUnit: 'gram',
+        purchasePrice: 1000,
+      };
+      const res = await agent.post('/ingredients').send(ingredient).expect(402);
+      expect(res.body.message).toMatch(/200 bahan baku paket FREE/);
+      const summary = (await agent.get('/subscription/me')).body;
+      expect(summary.usage.ingredients).toBe(200);
+      expect(summary.limits.ingredients).toBe(200);
+
+      await prisma.category.createMany({
+        data: Array.from({ length: 24 }, (_, i) => ({
+          businessId: me.id,
+          name: `Kategori ${i}`,
+          type: 'EXPENSE' as const,
+        })),
+      }); // 6 defaults + 24 = 30
+      await agent
+        .post('/categories')
+        .send({ name: 'Ke-31', type: 'EXPENSE' })
+        .expect(402);
+
+      await prisma.subscription.updateMany({
+        where: { user: { business: { id: me.id } } },
+        data: { tier: 'PRO' },
+      });
+      await agent.post('/ingredients').send(ingredient).expect(201);
+      await agent
+        .post('/categories')
+        .send({ name: 'Ke-31', type: 'EXPENSE' })
+        .expect(201);
+    });
+
+    it('keeps at most 10 sessions per user', async () => {
+      const email = `sess-${randomUUID()}@test.local`;
+      const server = app.getHttpServer();
+      await signUp(server, { name: 'S', email, password: 'rahasia123' }).expect(
+        200,
+      );
+      for (let i = 0; i < 12; i++) {
+        await request(server)
+          .post('/auth/sign-in/email')
+          .set('Origin', ORIGIN)
+          .send({ email, password: 'rahasia123' })
+          .expect(200);
+      }
+      const user = await prisma.user.findUniqueOrThrow({ where: { email } });
+      expect(await prisma.session.count({ where: { userId: user.id } })).toBe(
+        10,
+      );
+    });
+
+    it('purges expired sessions, stale scans and old photos', async () => {
+      const storage = app.get(StorageService, { strict: false });
+      const del = vi.spyOn(storage, 'delete').mockResolvedValue(undefined);
+      const agent = await register();
+      const me = (await agent.get('/business/me')).body as { id: string };
+      const user = await prisma.user.findFirstOrThrow({
+        where: { business: { id: me.id } },
+      });
+      const daysAgo = (n: number) => new Date(Date.now() - n * 86_400_000);
+      const scan = (status: 'FAILED' | 'DONE' | 'CONFIRMED', age: number) =>
+        prisma.receiptScan.create({
+          data: {
+            businessId: me.id,
+            imageKey: `${me.id}/${randomUUID()}`,
+            mimeType: 'image/png',
+            status,
+            rawResult: { x: 1 },
+            updatedAt: daysAgo(age),
+          },
+        });
+      const oldFailed = await scan('FAILED', 8);
+      const freshFailed = await scan('FAILED', 1);
+      const oldDraft = await scan('DONE', 31);
+      const oldConfirmed = await scan('CONFIRMED', 31);
+      const freshConfirmed = await scan('CONFIRMED', 2);
+      const expiredSession = await prisma.session.create({
+        data: {
+          userId: user.id,
+          token: randomUUID(),
+          expiresAt: daysAgo(1),
+        },
+      });
+      await prisma.verification.create({
+        data: { identifier: 'x', value: 'y', expiresAt: daysAgo(1) },
+      });
+
+      try {
+        const result = await app.get(MaintenanceService).purge();
+        expect(result.sessions).toBeGreaterThanOrEqual(1);
+        expect(result.verifications).toBeGreaterThanOrEqual(1);
+        const left = async (id: string) =>
+          prisma.receiptScan.findUnique({ where: { id } });
+        expect(await left(oldFailed.id)).toBeNull();
+        expect(await left(freshFailed.id)).not.toBeNull();
+        expect(await left(oldDraft.id)).toBeNull();
+        // saved data stays, only the photo goes
+        const purged = await left(oldConfirmed.id);
+        expect(purged).toMatchObject({ imageKey: null, rawResult: null });
+        expect((await left(freshConfirmed.id))?.imageKey).not.toBeNull();
+        expect(
+          await prisma.session.findUnique({ where: { id: expiredSession.id } }),
+        ).toBeNull();
+        // the active session still works
+        await agent.get('/business/me').expect(200);
+        expect(del).toHaveBeenCalledWith(oldFailed.imageKey);
+        expect(del).not.toHaveBeenCalledWith(freshFailed.imageKey);
+
+        // a photo that cannot be deleted keeps its row for the next run
+        const stuck = await scan('FAILED', 9);
+        del.mockRejectedValueOnce(new Error('s3 down'));
+        await app.get(MaintenanceService).purge();
+        expect(await left(stuck.id)).not.toBeNull();
+        await app.get(MaintenanceService).purge();
+        expect(await left(stuck.id)).toBeNull();
+      } finally {
+        del.mockRestore();
+      }
+    });
+
+    it('serves no photo once purged, scan data stays readable', async () => {
+      const agent = await register();
+      const me = (await agent.get('/business/me')).body as { id: string };
+      const gone = await prisma.receiptScan.create({
+        data: {
+          businessId: me.id,
+          imageKey: null,
+          mimeType: 'image/png',
+          status: 'CONFIRMED',
+          merchantName: 'Toko X',
+        },
+      });
+      const res = await agent.get(`/receipts/${gone.id}`).expect(200);
+      expect(res.body).toMatchObject({
+        merchantName: 'Toko X',
+        imageUrl: null,
+      });
+      await agent.get(`/receipts/${gone.id}/image`).expect(404);
+    });
+  });
+
+  it('caps AI provider calls per day app-wide (503), 0 = unlimited', async () => {
+    const budget = new AiBudget(2, `test-ai-${randomUUID()}`);
+    const unlimited = new AiBudget(0, `test-ai-${randomUUID()}`);
+    try {
+      await budget.take();
+      await budget.take();
+      await expect(budget.take()).rejects.toMatchObject({ status: 503 });
+      for (let i = 0; i < 5; i++) await unlimited.take();
+    } finally {
+      budget.disconnect();
+      unlimited.disconnect();
+    }
   });
 });

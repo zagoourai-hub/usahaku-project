@@ -6,7 +6,14 @@ import { PrismaClient } from '../generated/prisma/client.js';
 export class PrismaService extends PrismaClient implements OnModuleDestroy {
   constructor() {
     super({
-      adapter: new PrismaPg({ connectionString: process.env.DATABASE_URL }),
+      adapter: new PrismaPg({
+        connectionString: process.env.DATABASE_URL,
+        // Explicit limits: pg waits forever for a free connection by default.
+        max: Number(process.env.DB_POOL_MAX ?? 10),
+        connectionTimeoutMillis: 5_000,
+        idleTimeoutMillis: 30_000,
+        statement_timeout: 15_000, // a runaway query must not hold a connection
+      }),
     });
   }
 

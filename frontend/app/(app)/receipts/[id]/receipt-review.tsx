@@ -12,7 +12,8 @@ import { api, ApiError } from "@/lib/api-client";
 import { formatIDR, toISODate } from "@/lib/format";
 import { centsToString, toScaled } from "@/lib/hpp";
 import { ingredientsKey, useIngredients, type Ingredient } from "@/lib/ingredients";
-import { receiptKey, subscriptionKey, useReceiptScan, type ReceiptScan } from "@/lib/receipts";
+import { receiptKey, useReceiptScan, type ReceiptScan } from "@/lib/receipts";
+import { subscriptionKey } from "@/lib/subscription";
 import { transactionsKey, useCategories, type Category } from "@/lib/transactions";
 import { FormError } from "@/app/_components/fields";
 import { ErrorBox, ghostBtn, iconBtn, primaryBtn } from "../../ui";
@@ -69,7 +70,7 @@ export function ReceiptReview({ id }: { id: string }) {
   if (!scan.data || scan.data.status === "PENDING" || scan.data.status === "PROCESSING") {
     return (
       <Shell>
-        <Processing status={scan.data?.status ?? "PENDING"} image={scan.data?.imageUrl} />
+        <Processing status={scan.data?.status ?? "PENDING"} image={scan.data?.imageUrl ?? undefined} />
       </Shell>
     );
   }
@@ -237,11 +238,15 @@ function ReviewForm({ scan, ingredients, expenseCategories }: { scan: ReceiptSca
       onSubmit={handleSubmit((v) => (v.categoryId || defaultCategory ? save.mutate(v) : setError("categoryId", { message: "Pilih kategori." })))}
       noValidate className="grid grid-cols-1 gap-6 lg:grid-cols-[18rem_minmax(0,1fr)] lg:items-start">
       <aside className="space-y-3 lg:sticky lg:top-20">
-        <button type="button" onClick={() => setZoom((z) => !z)} aria-expanded={zoom} className="block w-full rounded-2xl border bg-card p-2 shadow-sm">
-          {/* eslint-disable-next-line @next/next/no-img-element -- cookie-authenticated API image */}
-          <img src={scan.imageUrl} alt="Foto struk" className={`w-full rounded-xl object-contain transition-[max-height] motion-reduce:transition-none ${zoom ? "max-h-[80vh]" : "max-h-72"}`} />
-          <span className="mt-2 block text-xs text-muted-foreground">{zoom ? "Ketuk untuk perkecil" : "Ketuk untuk perbesar"}</span>
-        </button>
+        {scan.imageUrl ? (
+          <button type="button" onClick={() => setZoom((z) => !z)} aria-expanded={zoom} className="block w-full rounded-2xl border bg-card p-2 shadow-sm">
+            {/* eslint-disable-next-line @next/next/no-img-element -- cookie-authenticated API image */}
+            <img src={scan.imageUrl} alt="Foto struk" className={`w-full rounded-xl object-contain transition-[max-height] motion-reduce:transition-none ${zoom ? "max-h-[80vh]" : "max-h-72"}`} />
+            <span className="mt-2 block text-xs text-muted-foreground">{zoom ? "Ketuk untuk perkecil" : "Ketuk untuk perbesar"}</span>
+          </button>
+        ) : (
+          <p className="rounded-2xl border bg-card p-4 text-sm text-muted-foreground shadow-sm">Foto struk sudah dihapus otomatis setelah beberapa waktu. Data belanja tetap tersimpan.</p>
+        )}
         <dl className="rounded-2xl border bg-card p-4 text-sm shadow-sm">
           <div className="flex justify-between">
             <dt className="text-muted-foreground">Total terdeteksi</dt>

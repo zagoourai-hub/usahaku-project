@@ -5,6 +5,15 @@ allowBuilds:
   msgpackr-extract: false
   prisma: true
 # Security: patched transitive versions (pnpm audit). Remove once upstream bumps.
+minimumReleaseAgeExclude:
+  - '@better-auth/core@1.7.10'
+  - '@better-auth/drizzle-adapter@1.7.10'
+  - '@better-auth/kysely-adapter@1.7.10'
+  - '@better-auth/memory-adapter@1.7.10'
+  - '@better-auth/mongo-adapter@1.7.10'
+  - '@better-auth/prisma-adapter@1.7.10'
+  - '@better-auth/telemetry@1.7.10'
+  - better-auth@1.7.10
 overrides:
   mysql2: ^3.23.1
   deepmerge-ts: ^8.0.0

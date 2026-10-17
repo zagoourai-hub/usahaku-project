@@ -64,35 +64,86 @@ enum CategoryType {
   EXPENSE
 }
 
+// Auth tables (User/Session/Account/Verification) follow Better Auth's schema.
 model User {
-  id           String        @id @default(uuid()) @db.Uuid
-  email        String        @unique
-  passwordHash String
-  name         String
-  createdAt    DateTime      @default(now())
-  updatedAt    DateTime      @updatedAt
-  business     Business?
-  subscription Subscription?
+  id             String        @id @default(uuid()) @db.Uuid
+  email          String        @unique
+  // Alias-proof form (gmail dots, +tags) so one person can't farm FREE quotas.
+  emailCanonical String        @unique
+  emailVerified  Boolean       @default(false)
+  image          String?
+  name           String
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+  business       Business?
+  subscription   Subscription?
+  sessions       Session[]
+  accounts       Account[]
+}
+
+model Session {
+  id        String   @id @default(uuid()) @db.Uuid
+  userId    String   @db.Uuid
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  token     String   @unique
+  expiresAt DateTime
+  ipAddress String?
+  userAgent String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([userId])
+}
+
+// Credential password hash lives here (providerId = "credential").
+model Account {
+  id                    String    @id @default(uuid()) @db.Uuid
+  userId                String    @db.Uuid
+  user                  User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  accountId             String
+  providerId            String
+  accessToken           String?
+  refreshToken          String?
+  idToken               String?
+  accessTokenExpiresAt  DateTime?
+  refreshTokenExpiresAt DateTime?
+  scope                 String?
+  password              String?
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
+
+  @@index([userId])
+}
+
+model Verification {
+  id         String   @id @default(uuid()) @db.Uuid
+  identifier String
+  value      String
+  expiresAt  DateTime
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@index([identifier])
 }
 
 model Business {
-  id            String         @id @default(uuid()) @db.Uuid
-  userId        String         @unique @db.Uuid
-  user          User           @relation(fields: [userId], references: [id], onDelete: Cascade)
-  name          String
-  type          BusinessType   @default(LAINNYA)
-  city          String?
+  id                String         @id @default(uuid()) @db.Uuid
+  userId            String         @unique @db.Uuid
+  user              User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  name              String
+  type              BusinessType   @default(LAINNYA)
+  city              String?
   // Daily net-profit goal shown on the dashboard; null = not set
-  dailyProfitTarget Decimal?   @db.Decimal(14, 2)
-  branchLabel   String?
-  createdAt     DateTime       @default(now())
-  updatedAt     DateTime       @updatedAt
-  ingredients   Ingredient[]
-  recipes       Recipe[]
-  categories    Category[]
-  transactions  Transaction[]
-  usageCounters UsageCounter[]
-  receiptScans  ReceiptScan[]
+  dailyProfitTarget Decimal?       @db.Decimal(14, 2)
+  branchLabel       String?
+  createdAt         DateTime       @default(now())
+  updatedAt         DateTime       @updatedAt
+  ingredients       Ingredient[]
+  recipes           Recipe[]
+  categories        Category[]
+  transactions      Transaction[]
+  usageCounters     UsageCounter[]
+  receiptScans      ReceiptScan[]
 }
 
 model Subscription {
@@ -259,7 +310,7 @@ model ReceiptScan {
   id            String        @id @default(uuid()) @db.Uuid
   businessId    String        @db.Uuid
   business      Business      @relation(fields: [businessId], references: [id], onDelete: Cascade)
-  imageKey      String // object storage key
+  imageKey      String? // object storage key; null once the photo was purged
   mimeType      String
   status        ReceiptStatus @default(PENDING)
   rawResult     Json?

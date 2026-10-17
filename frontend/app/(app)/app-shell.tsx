@@ -25,6 +25,7 @@ import {
 import { Logo } from "../_components/logo";
 import { SIDEBAR_COOKIE } from "./sidebar-cookie";
 import { ThemeToggle } from "../_components/theme-toggle";
+import { VerifyEmailBanner } from "./verify-email-banner";
 
 // `short`: label for the 6-column mobile bottom nav, where long words at 14px+ collide.
 type NavItem = { href: string; label: string; short?: string; Icon: LucideIcon };
@@ -54,7 +55,7 @@ export function AppShell({ children, defaultSidebarOpen }: { children: ReactNode
   const { data: business } = useBusiness();
 
   const logout = useMutation({
-    mutationFn: () => api("/auth/logout", { method: "POST" }),
+    mutationFn: () => api("/auth/sign-out", { method: "POST", body: "{}" }),
     onSettled: () => {
       queryClient.clear();
       router.replace("/login");
@@ -108,6 +109,7 @@ export function AppShell({ children, defaultSidebarOpen }: { children: ReactNode
           </div>
         </header>
 
+        <VerifyEmailBanner />
         {children}
 
         {/* Bottom nav — mobile */}
@@ -225,7 +227,12 @@ function SidebarBody({ isActive, onLogout, loggingOut }: { isActive: (href: stri
                 <div className="mt-1.5 h-2 overflow-hidden rounded-full bg-track" role="meter" aria-label="Kuota scan struk terpakai" aria-valuemin={0} aria-valuemax={ocrLimit} aria-valuenow={Math.min(ocr.data.used, ocrLimit)}>
                   <div className={`h-full rounded-full ${ocr.data.used / ocrLimit >= 0.8 ? "bg-warning" : "bg-primary"}`} style={{ width: `${Math.min(100, (ocr.data.used / ocrLimit) * 100)}%` }} />
                 </div>
-                <p className="mt-1 text-xs text-muted-foreground">Sisa {Math.max(0, ocrLimit - ocr.data.used)} scan bulan ini</p>
+                <p className="mt-1 text-xs text-muted-foreground">
+                  Sisa {Math.max(0, ocrLimit - ocr.data.used)} scan bulan ini ·{" "}
+                  <Link href="/pricing" className="rounded font-semibold text-primary underline-offset-2 hover:underline">
+                    Lihat paket
+                  </Link>
+                </p>
               </div>
             )}
             <div className="mt-3 border-t pt-3">

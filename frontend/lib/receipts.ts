@@ -1,6 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { api, API_URL } from "./api-client";
 import type { PurchaseUnit, UsageUnit } from "./ingredients";
+import { subscriptionKey, type SubscriptionSummary } from "./subscription";
 
 // Mirrors OcrService.get (backend/src/ocr/ocr.service.ts). Decimals arrive as strings.
 export type ReceiptStatus = "PENDING" | "PROCESSING" | "DONE" | "FAILED" | "CONFIRMED";
@@ -21,7 +22,7 @@ export type ReceiptScan = {
   errorMessage: string | null;
   createdAt: string;
   items: ReceiptItem[];
-  imageUrl: string; // API-relative, cookie-authenticated
+  imageUrl: string | null; // API-relative, cookie-authenticated; null once the photo was purged
 };
 
 export const receiptKey = (id: string) => ["receipts", id] as const;
@@ -32,22 +33,14 @@ export function useReceiptScan(id: string) {
     queryKey: receiptKey(id),
     queryFn: async () => {
       const scan = await api<ReceiptScan>(`/receipts/${id}`);
-      return { ...scan, imageUrl: `${API_URL}${scan.imageUrl}` };
+      return { ...scan, imageUrl: scan.imageUrl ? `${API_URL}${scan.imageUrl}` : null };
     },
     refetchInterval: (q) => (q.state.data?.status === "PENDING" || q.state.data?.status === "PROCESSING" ? 1500 : false),
     retry: false,
   });
 }
 
-type SubscriptionSummary = {
-  effectiveTier: "FREE" | "PRO";
-  limits: { ocrPerMonth: number | null };
-  usage: { ocr: number };
-};
-
 export type OcrQuota = { used: number; limit: number | null; tier: "FREE" | "PRO" };
-
-export const subscriptionKey = ["subscription", "me"] as const;
 
 /** OCR usage this month from GET /subscription/me. limit null = unlimited. */
 export function useOcrQuota() {

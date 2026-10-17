@@ -48,7 +48,7 @@ const select = {
   city: true,
   dailyProfitTarget: true,
   branchLabel: true,
-  user: { select: { name: true, email: true } },
+  user: { select: { name: true, email: true, emailVerified: true } },
 } as const;
 
 @Injectable()

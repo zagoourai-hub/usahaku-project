@@ -1,16 +1,17 @@
 # UsahaKu — Task Tracker
 
-Sumber: `docs/PRD.md` · Desain: `design/` (Stitch export) · Last Updated: 2026-09-27
+Sumber: `docs/PRD.md` · Desain: `design/` (Stitch export) · Last Updated: 2026-10-16
 
 ## Summary
 
-| Phase | Total | Completed | In Progress | Blocked | Todo |
-|---|---|---|---|---|---|
-| 0 Landing | 6 | 6 | 0 | 0 | 0 |
-| 1 Fondasi, Auth & Costing | 45 | 42 | 0 | 0 | 3 |
-| 2 Finance | 23 | 21 | 0 | 0 | 2 |
-| 3 Reporting, Tier & Deploy | 21 | 16 | 0 | 0 | 5 |
-| 4 Integrasi Backend | 9 | 9 | 0 | 0 | 0 |
+| Phase | Total | Completed | In Progress | Blocked | Todo | Dropped |
+|---|---|---|---|---|---|---|
+| 0 Landing | 6 | 6 | 0 | 0 | 0 | 0 |
+| 1 Fondasi, Auth & Costing | 46 | 43 | 0 | 0 | 0 | 3 |
+| 2 Finance | 23 | 23 | 0 | 0 | 0 | 0 |
+| 3 Reporting, Tier & Deploy | 21 | 19 | 0 | 1 | 1 | 0 |
+| 4 Integrasi Backend | 9 | 9 | 0 | 0 | 0 | 0 |
+| 5 Auth & Anti-Abuse | 13 | 12 | 0 | 0 | 1 | 0 |
 
 ## Arsitektur
 
@@ -23,7 +24,7 @@ usahaku/
 └── docs/       PRD + tracker ini
 ```
 
-- **Auth:** JWT di httpOnly cookie (bukan localStorage) — profile `saas-web-no-ai`. PRD menyebut "attach JWT" di api-client → diganti `credentials: "include"`.
+- **Auth:** Better Auth, sesi di DB + cookie httpOnly (bukan localStorage) — profile `saas-web-no-ai`. Dipindah dari JWT custom 2026-10-16 (keputusan bigboss: library + plugin luas). PRD menyebut "attach JWT" di api-client → diganti `credentials: "include"`.
 - **Data:** semua query di-scope `businessId` user; uang `Decimal(14,2)`, kuantitas `Decimal(12,3)`.
 - **Validasi:** BE pakai `class-validator` DTO (profile), FE pakai Zod + RHF.
 - **Frontend route:** `/` landing (publik) · `/login` `/register` `/onboarding` · app terproteksi via `proxy.ts`.
@@ -32,8 +33,8 @@ usahaku/
 
 ## Backend API (terintegrasi FE)
 
-Base `http://localhost:4000`, cookie `access_token` (FE fetch `credentials: "include"`). Uang/kuantitas di response = string Decimal.
-`POST /auth/register|login|logout` · `GET|PATCH /business/me` · `GET /subscription/me` · CRUD `/ingredients` · CRUD `/recipes` + `GET /recipes/:id/hpp-history` · CRUD `/categories` · CRUD `/transactions` · `GET /reports/summary|profit-loss|recipe-sales|export` · `GET /notifications` · `POST /receipts` (multipart `image`, 202) + `GET /receipts/:id` (polling) + `GET /receipts/:id/image` + `POST /receipts/:id/confirm` · `POST /recipes/:id/price-suggestion` + `GET /recipes/:id/price-suggestions`. Error kuota = **402**, AI tidak tersedia/belum dikonfigurasi = **503**.
+Base `http://localhost:4000`, cookie `usahaku.session_token` (FE fetch `credentials: "include"`). Uang/kuantitas di response = string Decimal.
+`POST /auth/sign-up/email|sign-in/email|sign-out` · `GET|PATCH /business/me` · `GET /subscription/me` · CRUD `/ingredients` · CRUD `/recipes` + `GET /recipes/:id/hpp-history` · CRUD `/categories` · CRUD `/transactions` · `GET /reports/summary|profit-loss|recipe-sales|export` · `GET /notifications` · `POST /receipts` (multipart `image`, 202) + `GET /receipts/:id` (polling) + `GET /receipts/:id/image` + `POST /receipts/:id/confirm` · `POST /recipes/:id/price-suggestion` + `GET /recipes/:id/price-suggestions`. Error kuota = **402**, AI tidak tersedia/belum dikonfigurasi = **503**.
 
 `pnpm audit --prod` backend & frontend: 0 temuan (backend via `overrides` di `backend/pnpm-workspace.yaml`; hapus saat upstream bump).
 
@@ -48,7 +49,7 @@ Base `http://localhost:4000`, cookie `access_token` (FE fetch `credentials: "inc
 | L-05 | 0 | FE | completed | Toggle dark/light + simpan preferensi | L-03 | Playwright: toggle → light, reload tetap light (localStorage) | Default dark (sesuai desain) |
 | L-06 | 0 | FE | completed | Screenshot desktop+mobile, bandingkan dengan desain | L-03 | `screenshots/landing-{desktop,mobile}-dark.png`, `landing-desktop-light.png`; console 0 error, network 0 gagal | Footer: hanya link nyata (tanpa sosmed/halaman legal) |
 | V-01 | 1 | FE | completed | Samakan visual app (dashboard, resep, form resep, bahan, transaksi) dengan desain Stitch | L-01 | Screenshot desktop+mobile vs design/; 375px tanpa overflow; console 0 error | Data yang belum ada di backend = dummy di `lib/mock.ts` (chip "Contoh"); AI/OCR tetap tidak ditampilkan |
-| 1-01 | 1 | OPS | todo | `pnpm-workspace.yaml` root | - | | CLAUDE.md: root tanpa workspace — konfirmasi dulu |
+| 1-01 | 1 | OPS | dropped | `pnpm-workspace.yaml` root | - |  | Keputusan: root tanpa workspace (lihat CLAUDE.md); perintah dijalankan dari `backend/` atau `frontend/` |
 | 1-02 | 1 | OPS | completed | Spike decorator metadata NestJS + vitest di TS 7 | - | `nest build` OK dgn alias TS6; `pnpm typecheck` (TS7) OK; vitest OK | `typescript`=TS6 alias (Nest CLI butuh compiler API), TS7 di `@typescript/native` |
 | 1-03 | 1 | OPS | completed | `docker/docker-compose.yml` (postgres, redis, backend, frontend) | - | `--profile app up -d --build` → FE `/` 200 (title OK), BE 401 tanpa cookie, postgres healthy | postgres (default) + backend/frontend (profile `app`). Redis tidak dipasang: belum ada pemakai |
 | 1-04 | 1 | OPS | completed | `docker/backend/Dockerfile` multi-stage | - | `docker build -f docker/backend/Dockerfile backend` OK; container jalan sbg uid 1000 (node) | node:24-slim, pnpm prune --prod; generator Prisma dipin `moduleFormat=esm`, `importFileExtension=js` |
@@ -58,20 +59,20 @@ Base `http://localhost:4000`, cookie `access_token` (FE fetch `credentials: "inc
 | 1-08 | 1 | BE | completed | `PrismaService` (adapter-pg) | 1-07 | `pnpm test:e2e` 19/19 | `src/prisma/prisma.service.ts` + `@Global` PrismaModule |
 | 1-09 | 1 | BE | completed | Global `ValidationPipe` + exception filter | - | `pnpm test:e2e` 19/19 (400 validasi, 409 P2002) | ValidationPipe whitelist+forbidNonWhitelisted; `PrismaExceptionFilter` map P2002/P2003/P2025 |
 | 1-10 | 1 | BE | completed | Hapus/pindah key `@nestjs/observe` hardcoded ke env | - | `pnpm build` + boot OK | `@nestjs/observe` dihapus (placeholder key) |
-| 1-11 | 1 | FE | todo | Init shadcn/ui di atas token tema | L-02 |  | Tidak dipakai: form memakai <dialog> native (`app/_components/sheet.tsx`); pasang shadcn hanya bila butuh komponen yang tidak ada padanan native |
+| 1-11 | 1 | FE | dropped | Init shadcn/ui di atas token tema | L-02 |  | Tidak dipakai: form memakai <dialog> native (`app/_components/sheet.tsx`); komponen pihak ketiga manual di `components/ui/` |
 | 1-12 | 1 | FE | completed | `providers.tsx` (TanStack Query + Sonner) | 1-11 | Dipakai dashboard/onboarding; E2E: cookie palsu → 401 → logout → /login tanpa loop | `app/providers.tsx`: QueryCache/MutationCache onError 401; retry hanya 5xx/jaringan. Sonner ditunda (belum ada toast) |
 | 1-13 | 1 | FE | completed | `lib/api-client.ts` (fetch, `credentials: include`) | - | `pnpm lint`/build hijau; Playwright: backend mati → pesan koneksi tampil | `lib/api-client.ts`, `NEXT_PUBLIC_API_URL` default `http://localhost:4000` |
-| 1-14 | 1 | FE | completed | `proxy.ts` redirect route protected | 1-20 | curl: tanpa cookie /dashboard → 307 /login; cookie ada di /login → 307 /dashboard | Cek optimistik keberadaan cookie `access_token`; verifikasi JWT tetap di API |
+| 1-14 | 1 | FE | completed | `proxy.ts` redirect route protected | 1-20 | curl: tanpa cookie /dashboard → 307 /login; cookie ada di /login → 307 /dashboard | Cek optimistik keberadaan cookie sesi Better Auth (`usahaku.session_token`); verifikasi sesi tetap di API |
 | 1-15 | 1 | BE | completed | Model `User`, `Business`, `Subscription` | 1-07 | migration init |  |
 | 1-16 | 1 | BE | completed | `RegisterDto`, `LoginDto` | 1-09 | `pnpm test:e2e` 19/19 | class-validator (bukan Zod) sesuai profile |
 | 1-17 | 1 | BE | completed | `AuthService.register` (argon2 + Business + FREE + kategori default) | 1-15 | `pnpm test:e2e` 19/19 | argon2id; Business+Subscription FREE+6 kategori default dalam 1 nested write |
-| 1-18 | 1 | BE | completed | `AuthService.login` → JWT httpOnly cookie | 1-15 | `pnpm test:e2e` 19/19 | Cookie `access_token` httpOnly, sameSite=lax, secure di prod, 7 hari; dummy-hash anti user-enumeration |
-| 1-19 | 1 | BE | completed | `AuthController` | 1-17, 1-18 | `pnpm test:e2e` 19/19 | `POST /auth/register|login|logout` |
-| 1-20 | 1 | BE | completed | `JwtAuthGuard` + `@CurrentBusiness()` | 1-18 | `pnpm test:e2e` 19/19 (401 + scoping A/B) | Guard global (APP_GUARD), `@Public()` opt-out; `@CurrentBusiness()` |
+| 1-18 | 1 | BE | completed | Login → sesi Better Auth (cookie httpOnly) | 1-15 | `pnpm test:e2e` 19/19 | Diganti 2026-10-16 dari JWT custom ke Better Auth: sesi di tabel `Session`, cookie `usahaku.session_token` httpOnly/sameSite=lax/secure di prod, 7 hari; argon2 dipertahankan |
+| 1-19 | 1 | BE | completed | `AuthController` (mount Better Auth) | 1-17, 1-18 | `pnpm test:e2e` 19/19 | `/auth/sign-up/email|sign-in/email|sign-out|get-session`; limit sign-up 5/menit, sign-in 10/menit per IP |
+| 1-20 | 1 | BE | completed | `SessionGuard` + `@CurrentBusiness()` | 1-18 | `pnpm test:e2e` 19/19 (401 + scoping A/B) | Guard global (APP_GUARD), `@Public()` opt-out; sesi dicari lewat `auth.api.getSession`, `businessId` dari tabel Business |
 | 1-21 | 1 | BE | completed | `BusinessController` GET/PATCH `/business/me` | 1-20 | `pnpm test:e2e` 19/19 |  |
 | 1-22 | 1 | FE | completed | Halaman `/register` | 1-13 | E2E nyata (Postgres+API): daftar → cookie httpOnly, `/business/me` 200; email duplikat → error di kolom email | Kontrak = `RegisterDto` BE: {name, businessName?, email, password 8–128}; sukses → /onboarding (belum ada) |
 | 1-23 | 1 | FE | completed | Halaman `/login` | 1-13 | E2E nyata: sandi salah → "Email atau kata sandi salah."; benar → /dashboard | Kontrak = `LoginDto` BE; /dashboard belum ada (3-06) |
-| 1-24 | 1 | FE | todo | State auth (Zustand bila perlu) | 1-23 |  | Kemungkinan tidak perlu: JWT httpOnly, state user dari `/business/me` |
+| 1-24 | 1 | FE | dropped | State auth (Zustand bila perlu) | 1-23 |  | Tidak perlu: sesi di cookie httpOnly, state user dari `/business/me` (TanStack Query) |
 | 1-25 | 1 | FE | completed | Halaman `/onboarding` | 1-21 | E2E: prefill nama usaha, pilih Kedai Minuman + Surabaya → PATCH /business/me tersimpan → /dashboard | Radio card aksesibel (fieldset/legend, has-focus-visible); tombol "Lewati dulu" |
 | 1-26 | 1 | BE | completed | Model `Ingredient`, `IngredientPriceLog` | 1-15 | migration init | `pricePerUsageUnit` Decimal(14,4) (harga/gram sering pecahan) |
 | 1-27 | 1 | BE | completed | Konversi unit (kg↔gram, liter↔ml) | - | `pnpm test` 10/10 (hpp-calculator.spec) | kg→gram, liter→ml ×1000; `pack` = isi dalam usageUnit; kombinasi lain 400 |
@@ -111,10 +112,10 @@ Base `http://localhost:4000`, cookie `access_token` (FE fetch `credentials: "inc
 | 2-16 | 2 | AI | completed | OpenRouter client + schema + prompt OCR | - | `pnpm typecheck` OK (AI SDK v7); smoke build tanpa key → 503 aman | `ai` v7 + `@openrouter/ai-sdk-provider` + zod; default model free `google/gemma-4-31b-it:free` (`OPENROUTER_MODEL`) |
 | 2-17 | 2 | BE | completed | `OcrController` + `OcrProcessor` (BullMQ) | - | `pnpm test:e2e` 26/26 (AI di-mock); smoke `node dist/main.js`: upload→queue→worker→FAILED pesan aman | BullMQ + Redis (docker). 202 + polling `GET /receipts/:id`. Scan nyangkut di-enqueue ulang saat boot. Validasi magic bytes JPG/PNG/WEBP, maks 5MB |
 | 2-18 | 2 | BE | completed | Ingredient matcher + `OcrService.confirm` | - | `pnpm test` 18/18 (ocr-logic.spec); `pnpm test:e2e` 26/26 (AI di-mock) | Dice bigram (tanpa lib). Confirm: 1 tx = Transaction EXPENSE (source OCR) + update harga (log OCR) + recalc HPP; double-confirm 409 |
-| 2-19 | 2 | FE | todo | `ReceiptCapture` + polling + review page | - |  | FE: di-unblock (AI via OpenRouter disetujui bigboss 2026-09-26). API siap |
+| 2-19 | 2 | FE | completed | `ReceiptCapture` + polling + review page | - | Lihat I-06, I-07 (Playwright: upload → review → konfirmasi) | Dikerjakan di Fase 4 (integrasi) |
 | 2-20 | 2 | AI | completed | Schema + prompt price suggestion | - | `pnpm test:e2e` 26/26 (AI di-mock) | Output dinormalisasi min<=rec<=max, dibulatkan 2dp |
 | 2-21 | 2 | BE | completed | `PricingService` AI | - | `pnpm test:e2e` 26/26 (AI di-mock) | `POST /recipes/:id/price-suggestion`, `GET /recipes/:id/price-suggestions`. Kuota dicek sebelum & dipotong sesudah AI sukses (gagal tidak memotong kuota) |
-| 2-22 | 2 | FE | todo | `PriceSuggestionCard` AI | - |  | FE: di-unblock. API siap |
+| 2-22 | 2 | FE | completed | `PriceSuggestionCard` AI | - | Lihat I-08 (Playwright: 503 tampil rapi saat AI mati) | Dikerjakan di Fase 4 (integrasi) |
 | 2-23 | 2 | BE | completed | Model `PriceSuggestion` | - | migration `ocr_pricing` | + `hppAtRequest` untuk konteks |
 | 3-01 | 3 | BE | completed | `ReportService.summary` | 2-04 | `pnpm test:e2e` 19/19 | `/reports/summary?from&to&granularity=day|week|month`; tanpa Redis (belum perlu) |
 | 3-02 | 3 | BE | completed | `ReportService.profitLoss` | 2-04 | `pnpm test:e2e` 19/19 | `/reports/profit-loss` per kategori |
@@ -128,11 +129,11 @@ Base `http://localhost:4000`, cookie `access_token` (FE fetch `credentials: "inc
 | 3-10 | 3 | BE | completed | `UsageService` (increment + check atomic) | 3-08 | `pnpm test:e2e` 19/19 (402 + counter rollback) | Upsert increment dalam tx yang sama dgn insert |
 | 3-11 | 3 | BE | completed | `TierGuard` + `@RequireQuota()` | 3-10 | `pnpm test:e2e` 19/19 | Diganti cek kuota di service (atomic dgn create), bukan guard; HTTP 402 |
 | 3-12 | 3 | BE | completed | `SubscriptionController` | 3-08 | `pnpm test:e2e` 19/19 | `GET /subscription/me` (tier, limit, usage) |
-| 3-13 | 3 | FE | todo | Halaman `/pricing` | L-03 | | bisa reuse section harga landing |
-| 3-14 | 3 | FE | todo | `UsageMeter` | 3-12 | | |
-| 3-15 | 3 | FE | todo | `UpgradeModal` saat 402 | 3-11 | | |
-| 3-16 | 3 | OPS | todo | Coolify resource config | 1-04, 1-05 | | |
-| 3-17 | 3 | OPS | completed | `.github/workflows/ci.yml` | - | actionlint bersih; belum dijalankan di GitHub | Job backend: postgres + redis (services) + SeaweedFS (docker run) → lint, typecheck, test, e2e, build, audit. Job frontend: lint, tsc, build |
+| 3-13 | 3 | FE | completed | Halaman `/pricing` | L-03 | Playwright: `/pricing` desktop + mobile 375 (tanpa overflow-x), paket aktif ditandai, tabel perbandingan; `screenshots/pricing-*-free.png` | Di grup (app), butuh login (matcher `proxy.ts`). Data paket di `lib/plans.ts` (cermin `TIER_LIMITS`), dipakai juga oleh landing. Pembayaran online belum ada: tombol Pro = email ke halo@usahaku.id. Klaim landing yang tak ada di backend (trial 14 hari, 3 pengguna tim, backup cloud, resep tanpa batas di Gratis) dihapus |
+| 3-14 | 3 | FE | completed | `UsageMeter` | 3-12 | Playwright: kartu pemakaian di Beranda dan `/pricing` (0/10, 0/100, 0/10, 0/5); `screenshots/dashboard-desktop-usage-meter.png` | `app/(app)/usage-meter.tsx` + `lib/subscription.ts` (satu query key untuk sidebar, laporan, meter). Bar kuning ≥80%, merah saat penuh |
+| 3-15 | 3 | FE | completed | `UpgradeModal` saat 402 | 3-11 | Playwright: 402 pada upload struk → modal "Batas paket tercapai" → "Lihat paket Pro" → `/pricing`, modal tertutup; `screenshots/upgrade-modal-desktop-402.png` | Global: `providers.tsx` menangkap semua 402 (query & mutation) → `lib/upgrade.ts` + `upgrade-modal.tsx` (native `<dialog>`, bukan SweetAlert2). 402 disimulasikan (route mock); kontrak 402 sudah dites e2e backend |
+| 3-16 | 3 | OPS | blocked | Coolify resource config | 1-04, 1-05 | Repo siap: `docs/DEPLOY.md` (resource, env, secrets, cek pasca-deploy), `GET /health`, fail-fast env production, `COOKIE_DOMAIN` | Menunggu akses Coolify bigboss: buat resource, isi env/secrets GitHub, jalankan Deploy pertama |
+| 3-17 | 3 | OPS | completed | `.github/workflows/ci.yml` | - | actionlint bersih; dijalankan di GitHub 2026-10-02: job backend hijau, frontend gagal (`PageProps` belum ada sebelum build) → diperbaiki dengan `next typegen` sebelum `tsc`; belum dijalankan ulang | Job backend: postgres + redis (services) + SeaweedFS (docker run) → lint, typecheck, test, e2e, build, audit. Job frontend: lint, typegen, tsc, build. CI hanya jalan di push ke main dan pull request |
 | 3-18 | 3 | OPS | completed | `.github/workflows/deploy.yml` | 3-17 | actionlint bersih; belum dijalankan (root belum repo GitHub, secrets belum ada) | Setelah CI sukses di main: build+push GHCR (backend, frontend) → webhook Coolify. Butuh secrets `COOLIFY_TOKEN`, `COOLIFY_WEBHOOK_BACKEND/FRONTEND`, var `NEXT_PUBLIC_API_URL` |
 | 3-19 | 3 | OPS | completed | `prisma migrate deploy` di entrypoint | 1-04 | Log container: "No pending migrations to apply" lalu Nest started | CMD: `prisma migrate deploy` lalu `node dist/main.js`; `prisma` pindah ke dependencies, dotenv dihapus |
 | 3-20 | 3 | OPS | completed | `pnpm audit` BE+FE sebelum rilis | - | BE `pnpm audit --prod`: 0; FE `pnpm audit`: 0 | BE: override mysql2/deepmerge-ts/uuid di `pnpm-workspace.yaml` (e2e 19/19 + migrate OK). Sisa temuan hanya devDependencies |
@@ -153,3 +154,21 @@ Selesai 2026-09-27: semua data dummy `frontend/lib/mock.ts` diganti endpoint asl
 | I-07 | 4 | FE | completed | Konfirmasi via `POST /receipts/:id/confirm` (1 DB transaction); item punya kolom satuan; preview harga beli baru cermin `purchasePriceFromReceipt` | - | Playwright: 2 liter Rp39.000 → Susu 19.800→19.500, HPP 5.670→5.625, transaksi OCR | |
 | I-08 | 4 | FE | completed | Saran harga AI via `POST /recipes/:id/price-suggestion` (butuh resep tersimpan & tidak dirty) | - | Playwright: 503 "Fitur AI belum dikonfigurasi" tampil rapi | `OPENROUTER_API_KEY` di `backend/.env` masih kosong |
 | I-09 | 4 | FE | completed | `lib/mock.ts` + `MockBadge` dihapus; E2E semua halaman | I-01..I-08 | BE typecheck/lint/test 18/18/e2e 30/30/build; FE tsc/lint/build/hpp.check; audit BE+FE 0; screenshots `screenshots/*-integrated.png` | |
+
+## Phase 5: Auth & Anti-Abuse (2026-10-16)
+
+| ID | Phase | Layer | Status | Task | Dependencies | Verification | Notes |
+|---|---|---|---|---|---|---|---|
+| A-01 | 5 | BE | completed | Rate limit per IP global (120/menit) + counter di Redis (`RedisThrottlerStorage`); limit ketat upload struk & export | - | e2e "rate-limits login (429)"; hitungan bertahan antar restart | Fail closed bila Redis mati. `TRUST_PROXY_HOPS=1` wajib di belakang Coolify |
+| A-02 | 5 | BE | completed | Email kanonik unik (`emailCanonical`: dot gmail, `+tag`, googlemail) + tolak domain email sementara | - | `email.spec.ts` + e2e "treats gmail dots and +tags as the same mailbox", "rejects disposable email domains" | Migrasi `email_canonical`; akun lama: canonical = email |
+| A-03 | 5 | BE | completed | Batas akun baru per IP per hari (`MAX_SIGNUPS_PER_IP_PER_DAY`, default 3; IPv6 per /64), jatah dikembalikan bila gagal | A-01 | e2e "caps new accounts per IP per day" | `SignupLimiter` di Redis |
+| A-04 | 5 | BE+FE | completed | Cloudflare Turnstile di register (plugin `captcha` Better Auth; widget `turnstile.tsx`) | A-05 | e2e: token kosong/salah/benar/verifier mati (fail closed); Playwright dengan widget tiruan | Kosong = nonaktif. Key tes Cloudflare di `backend/.env.example`. Belum diuji dengan Cloudflare asli |
+| A-05 | 5 | BE | completed | Migrasi auth custom JWT → Better Auth 1.7.10 (sesi DB, argon2, hook Business+Subscription+kategori) | 1-18 | e2e 34/39 (5 gagal = S3 tidak jalan); tes hash lama tetap valid; CSRF origin 403; sign-out mencabut sesi | Migrasi `better_auth` memindah `passwordHash` → `Account.password`. Env: `BETTER_AUTH_SECRET`, `BETTER_AUTH_URL` |
+| A-06 | 5 | FE | completed | Login/register/logout memakai endpoint Better Auth; `proxy.ts` baca cookie baru | A-05 | Playwright: daftar → onboarding → dashboard → keluar → salah sandi → masuk; 0 error halaman | Sandbox tanpa S3/Cloudflare: OCR & captcha asli belum diuji |
+| A-07 | 5 | BE | completed | Reset sandi + verifikasi email (Better Auth, SMTP via nodemailer, Mailpit untuk dev) + gerbang verifikasi untuk scan struk/saran AI | A-05 | e2e: kirim email verifikasi, tautan memverifikasi, token rusak ditolak, AI 403 sampai verifikasi, reset sandi sekali pakai + sesi lama dicabut, email tak dikenal tidak bocor, throttle 3/menit, Turnstile di reset; SMTP asli ke sink lokal (nodemailer); Playwright: daftar → banner → verifikasi → lupa sandi → reset → login (desktop+mobile 375, 0 error halaman); e2e 46/51 (5 gagal = S3) | Login Google dipisah ke A-11. Akun lama di-grandfather (emailVerified=true) lewat migrasi. Belum diuji dengan SMTP penyedia asli (Resend) dan Mailpit asli (tidak ada Docker di sesi ini) |
+| A-08 | 5 | OPS | completed | Cookie lintas subdomain di production (`crossSubDomainCookies`) atau FE+API satu domain | A-05 | e2e: `Set-Cookie` memuat `Domain=.usahaku.test` saat `COOKIE_DOMAIN` diisi; backend production gagal start tanpa `BETTER_AUTH_URL`/`FRONTEND_ORIGIN` | Env `COOKIE_DOMAIN` → `crossSubDomainCookies` Better Auth. Kosong = cookie host-only (dev). Belum diuji di domain asli |
+| A-09 | 5 | BE | completed | Pengaman biaya AI: batas panggilan global harian (`AI_DAILY_CALL_CAP`), `maxRetries: 0`, `maxOutputTokens`, log pemakaian token | 2-16 | e2e `caps AI provider calls per day app-wide` (503; 0 = tanpa batas); pnpm lint/typecheck hijau; e2e 35/40 (5 gagal = S3 tidak jalan) | OCR maks 2 panggilan/scan (BullMQ), saran harga 1 panggilan. Token dicatat di log, belum per akun. Belum diuji dengan OpenRouter asli |
+| A-10 | 5 | BE+FE | completed | Pengaman pertumbuhan & stabilitas: batas bahan/kategori per paket, sesi maks 10/user, argon2 param OWASP, job pembersihan (sesi, scan, foto struk), pool DB + statement timeout, graceful shutdown, keep-alive proxy | A-05 | e2e: 402 batas bahan/kategori (+PRO lebih longgar), sesi ≤10, purge (foto gagal dihapus → baris dipertahankan), foto kosong → 404/`imageUrl` null; argon2: 12 hash paralel puncak memori 309 → 129 MB, 769 → 152 ms; lint/typecheck BE+FE hijau | Batas 200/1000 bahan dan 30/100 kategori adalah tebakan awal. Foto struk terkonfirmasi dihapus setelah 30 hari (data tetap). Belum diuji dengan S3 asli |
+| A-11 | 5 | BE+FE | todo | Login dengan Google (plugin social Better Auth) | A-07 | | Butuh OAuth client ID/secret dari Google Cloud (redirect URI = `BETTER_AUTH_URL/auth/callback/google`) |
+| A-12 | 5 | BE | completed | Suite tes keamanan e2e (black-box) + perbaikan temuan | A-05, A-07 | `test/security.e2e-spec.ts` 43/43; seluruh e2e 89/94 dua kali berturut-turut (5 gagal = S3 tidak jalan); lint/typecheck hijau | Temuan 1 (diperbaiki): email >254 karakter diterima saat daftar → kini 400 di semua endpoint beremail. Catatan diterima: daftar dengan email terdaftar menjawab 422 (membuka keberadaan email), body sign-up/sign-in memuat token sesi |
+| A-13 | 5 | BE+FE | completed | Uji e2e hitung HPP usaha nyata (Es Teh Manis, 10 gelas/resep): satuan pack/kg, overhead, rekomendasi harga, margin, kenaikan harga bahan | 1-35, 1-43 | Hitung manual (rupiah bulat) = UI live = server: HPP Rp 1.840, rekomendasi Rp 4.600 (dibulatkan Rp 5.000), margin 63,2%; gula 16.000→18.000/kg → HPP Rp 1.890 (+2,7%), riwayat 1.840→1.890; Playwright via UI 0 error; `test/hpp-esteh.e2e-spec.ts` lulus 2x; screenshot `screenshots/*esteh*` | Tes regresi API ikut `pnpm test:e2e` |

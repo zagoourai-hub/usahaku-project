@@ -1,5 +1,6 @@
 import {
   Controller,
+  ForbiddenException,
   Get,
   HttpException,
   HttpStatus,
@@ -18,6 +19,8 @@ export const TIER_LIMITS: Record<
   Tier,
   {
     recipes: number | null;
+    ingredients: number | null;
+    categories: number | null;
     transactionsPerMonth: number | null;
     ocrPerMonth: number | null;
     aiSuggestionsPerMonth: number | null;
@@ -26,6 +29,8 @@ export const TIER_LIMITS: Record<
 > = {
   FREE: {
     recipes: 10,
+    ingredients: 200, // caps list size, OCR matching cost and report/PDF rows
+    categories: 30,
     transactionsPerMonth: 100,
     ocrPerMonth: 10,
     aiSuggestionsPerMonth: 5,
@@ -33,6 +38,8 @@ export const TIER_LIMITS: Record<
   },
   PRO: {
     recipes: null,
+    ingredients: 1000,
+    categories: 100,
     transactionsPerMonth: null,
     ocrPerMonth: 300,
     aiSuggestionsPerMonth: 100, // not in PRD; proposed default
@@ -100,6 +107,39 @@ export class UsageService {
     }
   }
 
+  /** AI features need a confirmed email, so throwaway addresses can't burn the AI budget. */
+  async assertEmailVerified(businessId: string) {
+    const verified = await this.prisma.user.count({
+      where: { business: { id: businessId }, emailVerified: true },
+    });
+    if (!verified) {
+      throw new ForbiddenException(
+        'Konfirmasi email dulu untuk memakai fitur ini. Cek kotak masuk kamu.',
+      );
+    }
+  }
+
+  /** Total-count cap (not monthly) for ingredients/categories, checked inside the insert's tx. */
+  async assertCountQuota(
+    tx: Prisma.TransactionClient,
+    businessId: string,
+    kind: 'ingredients' | 'categories',
+  ) {
+    const tier = await this.tier(businessId, tx);
+    const limit = TIER_LIMITS[tier][kind];
+    if (limit === null) return;
+    const count =
+      kind === 'ingredients'
+        ? await tx.ingredient.count({ where: { businessId } })
+        : await tx.category.count({ where: { businessId } });
+    if (count >= limit) {
+      const label = kind === 'ingredients' ? 'bahan baku' : 'kategori';
+      throw new QuotaExceededException(
+        `Batas ${limit} ${label} paket ${tier} tercapai.${tier === 'FREE' ? ' Upgrade ke PRO.' : ''}`,
+      );
+    }
+  }
+
   /**
    * Atomically increments this month's counter for `meter`. Must run inside
    * the same DB transaction as the insert: throwing rolls back both.
@@ -142,13 +182,16 @@ export class UsageService {
 
   async summary(businessId: string) {
     const period = currentPeriod();
-    const [tier, counter, recipeCount] = await Promise.all([
-      this.tier(businessId),
-      this.prisma.usageCounter.findUnique({
-        where: { businessId_period: { businessId, period } },
-      }),
-      this.prisma.recipe.count({ where: { businessId } }),
-    ]);
+    const [tier, counter, recipeCount, ingredientCount, categoryCount] =
+      await Promise.all([
+        this.tier(businessId),
+        this.prisma.usageCounter.findUnique({
+          where: { businessId_period: { businessId, period } },
+        }),
+        this.prisma.recipe.count({ where: { businessId } }),
+        this.prisma.ingredient.count({ where: { businessId } }),
+        this.prisma.category.count({ where: { businessId } }),
+      ]);
     const sub = await this.prisma.subscription.findFirst({
       where: { user: { business: { id: businessId } } },
       select: { tier: true, status: true, startedAt: true, expiresAt: true },
@@ -160,6 +203,8 @@ export class UsageService {
       usage: {
         period,
         recipes: recipeCount,
+        ingredients: ingredientCount,
+        categories: categoryCount,
         transactions: counter?.transactionCount ?? 0,
         ocr: counter?.ocrCount ?? 0,
         aiSuggestions: counter?.aiSuggestionCount ?? 0,
